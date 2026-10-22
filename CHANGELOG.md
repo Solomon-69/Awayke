@@ -5,7 +5,43 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+Awayke is a fork of [Sleepless](https://github.com/Aboudjem/Sleepless) by Adam Boudjemaa.
+Versions 1.0.0 to 1.2.7 below are the original Sleepless releases and are kept for history.
+
 ## [Unreleased]
+
+## [1.4.0] - 2026-10-22
+
+### Changed
+- Renamed the app to **Awayke** (it was briefly called Insomnia during development). The
+  app installs as `Awayke.app`; `build.sh`, `install.sh` and `uninstall.sh` now use that
+  name. The bundle identifier (`com.aboudjem.Sleepless`), the internal executable name and
+  the permission file `/etc/sudoers.d/sleepless-disablesleep` are unchanged, so existing
+  installs, saved settings and the one-time permission keep working.
+- New, simpler app icon: one clean flame with a soft cut-out core.
+- Choosing Quit while the panel is open now folds the panel away with its normal close
+  animation before the app quits, instead of it vanishing abruptly.
+- Documentation rewritten for Awayke (English only; the translated READMEs from Sleepless
+  were out of date and have been removed). Security reports now go through GitHub's
+  private vulnerability reporting.
+- CI now compiles every Swift source file, not only `App.swift`.
+
+## [1.3.0] - 2026-10-21
+
+### Changed
+- Redesigned interface ("Ember"): a SwiftUI panel and a separate Settings window.
+- Menu bar icon is now a candle: lit when keeping the Mac awake, unlit with a wisp of smoke
+  when sleeping normally, optionally drawn in the accent colour.
+- Single click toggles keep-awake; holding the icon or right-clicking opens the panel. The
+  click and hold actions and the hold length can be changed in Settings.
+- The one-time permission is installed through a single native macOS authentication prompt
+  (Touch ID or password) from inside the app, with no Terminal needed.
+
+### Added
+- Custom auto-off timer buttons (5 minutes to 24 hours) and a default timer.
+- Option to keep the screen on as well as the Mac.
+- Optional Low Power Mode switch-off setting.
+- Normal sleep is restored if the app crashes, not only when it quits.
 
 ## [1.2.7] - 2026-06-03
 
@@ -156,7 +192,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - README in 6 languages (English, 简体中文, Español, 日本語, Français, Deutsch).
 - MIT license, security model (`SECURITY.md`), and community-health files.
 
-[Unreleased]: https://github.com/Aboudjem/Sleepless/compare/v1.2.5...HEAD
+[Unreleased]: https://github.com/Solomon-69/Awayke/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/Solomon-69/Awayke/releases/tag/v1.4.0
 [1.2.5]: https://github.com/Aboudjem/Sleepless/compare/v1.2.4...v1.2.5
 [1.2.4]: https://github.com/Aboudjem/Sleepless/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/Aboudjem/Sleepless/compare/v1.2.2...v1.2.3

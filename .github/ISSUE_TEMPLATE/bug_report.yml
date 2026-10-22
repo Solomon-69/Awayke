@@ -5,15 +5,15 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting. Sleepless is verified on macOS 26 (Tahoe) / Apple Silicon;
-        behavior elsewhere isn't guaranteed because `disablesleep` is undocumented — please
+        Thanks for reporting. Awayke is verified on macOS 26 (Tahoe) on Apple Silicon.
+        Behavior elsewhere isn't guaranteed because `disablesleep` is undocumented, so please
         include your versions below so we can tell drift from a real bug.
   - type: textarea
     id: what-happened
     attributes:
       label: What happened?
       description: What did you expect, and what happened instead?
-      placeholder: I turned Sleepless on, closed the lid, and the Mac still slept…
+      placeholder: I turned Awayke on, closed the lid, and the Mac still slept.
     validations:
       required: true
   - type: textarea
@@ -21,9 +21,8 @@ body:
     attributes:
       label: Steps to reproduce
       placeholder: |
-        1. Click the coffee cup in the menu bar
-        2. Toggle the switch on
-        3. Close the lid (on battery)
+        1. Click the candle in the menu bar to switch Awayke on
+        2. Close the lid (on battery)
     validations:
       required: true
   - type: input
@@ -53,11 +52,10 @@ body:
   - type: dropdown
     id: install-method
     attributes:
-      label: How did you install Sleepless?
+      label: How did you install Awayke?
       options:
         - Built from source (build.sh / install.sh)
         - Downloaded the release .zip
-        - Homebrew tap (brew install --cask)
     validations:
       required: true
   - type: textarea

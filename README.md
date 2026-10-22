@@ -1,166 +1,131 @@
-<!-- Language switcher. Keep this row identical across every README.<lang>.md. -->
-<p align="center">
-  <b>English</b> &nbsp;·&nbsp;
-  <a href="README.zh-CN.md">简体中文</a> &nbsp;·&nbsp;
-  <a href="README.es.md">Español</a> &nbsp;·&nbsp;
-  <a href="README.ja.md">日本語</a> &nbsp;·&nbsp;
-  <a href="README.fr.md">Français</a> &nbsp;·&nbsp;
-  <a href="README.de.md">Deutsch</a>
-</p>
-
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/hero-dark.gif">
-    <source media="(prefers-color-scheme: light)" srcset="assets/hero-light.gif">
-    <img alt="Sleepless: keep your Mac awake with the lid closed" src="assets/hero-light.gif" width="780">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/hero-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/hero-light.svg">
+    <img alt="Awayke: keep your Mac awake with the lid closed" src="assets/hero-light.svg" width="780">
   </picture>
 </p>
 
 <p align="center">
   <b>Keep your MacBook awake with the lid closed, on battery, with no external display.</b><br>
-  <sub>One menu-bar switch, with an auto-off timer and a battery-floor cutoff so you never drain it flat.</sub>
+  <sub>One menu bar switch, with an auto-off timer and a low-battery cutoff so you never drain it flat.</sub>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Aboudjem/Sleepless/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/Aboudjem/Sleepless/ci.yml?branch=main&label=CI&logo=githubactions&logoColor=white&style=flat-square&color=8B5CF6"></a>
-  <a href="https://github.com/Aboudjem/Sleepless/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/Aboudjem/Sleepless?label=release&logo=apple&logoColor=white&style=flat-square&color=8B5CF6"></a>
-  <a href="https://github.com/Aboudjem/Sleepless/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/Aboudjem/Sleepless/total?label=downloads&style=flat-square&color=6366F1"></a>
-  <a href="https://github.com/Aboudjem/Sleepless/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/Aboudjem/Sleepless?style=flat-square&color=6366F1"></a>
-  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-D946EF?style=flat-square"></a>
-  <img alt="Platform: macOS 26, Apple Silicon" src="https://img.shields.io/badge/macOS%2026-Apple%20Silicon-8B5CF6?style=flat-square&logo=apple&logoColor=white">
-</p>
-<p align="center">
-  <img alt="Build provenance: attested (SLSA)" src="https://img.shields.io/badge/build%20provenance-attested-8B5CF6?style=flat-square&logo=githubactions&logoColor=white">
-  <img alt="Checksums: SHA-256" src="https://img.shields.io/badge/checksums-SHA--256-6366F1?style=flat-square">
-  <img alt="Telemetry: none" src="https://img.shields.io/badge/telemetry-none-D946EF?style=flat-square">
-  <a href="https://github.com/Aboudjem/homebrew-tap"><img alt="Install: Homebrew cask" src="https://img.shields.io/badge/homebrew-cask-8B5CF6?style=flat-square&logo=homebrew&logoColor=white"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-F97316?style=flat-square"></a>
+  <img alt="Platform: macOS 26, Apple Silicon" src="https://img.shields.io/badge/macOS%2026-Apple%20Silicon-F97316?style=flat-square&logo=apple&logoColor=white">
+  <img alt="Telemetry: none" src="https://img.shields.io/badge/telemetry-none-EA580C?style=flat-square">
 </p>
 
-<p align="center">
-  <img alt="Sleepless demo: flip the switch, set an auto-off timer, drag the battery-floor slider" src="assets/demo.gif" width="760">
-</p>
+## What it does
 
-> [!NOTE]
-> A closed lid sleeps your Mac, and `caffeinate` apps (KeepingYouAwake and friends) can't change that, by design. Sleepless flips the one setting that can, `pmset disablesleep`, with safety nets so it is safe to forget.
+Closing a MacBook's lid puts it to sleep. Apps that use `caffeinate` (KeepingYouAwake and similar) cannot change that, by design. Awayke switches the one macOS setting that can, `pmset disablesleep`, and wraps it in safety nets so it is safe to forget about:
+
+- **One switch.** Click the candle in the menu bar to turn it on or off (lit means awake, unlit means normal sleep). Hold the icon, or right-click it, to open the panel.
+- **Auto-off timer.** Off, 30 minutes, 1 hour or 2 hours, with a live countdown. You can add your own timer lengths in Settings.
+- **Low-battery cutoff.** On battery, Awayke switches itself off at a level you choose (5 to 50 percent).
+- **Low Power Mode.** On battery, it can step aside when Low Power Mode is on.
+- **Screen option.** Keep only the Mac running, or keep the screen on too.
+- **Launch at login.** Optional. It always starts switched off.
+- **Normal sleep comes back** when you switch it off, quit, restart, or if the app crashes.
+
+Good for overnight builds and downloads, sharing a hotspot from your bag, or keeping a server or SSH session reachable with the lid shut.
+
+<p align="center">
+  <img alt="The Awayke panel: keep-awake switch, auto-off timer, low-battery cutoff, launch at login and Settings" src="assets/screenshot.png" width="360">
+</p>
 
 ## Install
 
-```sh
-brew install --cask aboudjem/tap/sleepless
-/Applications/Sleepless.app/Contents/Resources/grant.sh   # one-time passwordless grant
-```
+1. Download `Awayke-<version>.zip` from the [latest release](https://github.com/Solomon-69/Awayke/releases/latest) and double-click it to unzip.
+2. Drag **Awayke.app** into your **Applications** folder.
+3. The first time, **right-click Awayke.app and choose Open**, then confirm. Awayke is not notarized by Apple (that needs a paid developer account), so macOS asks before opening it.
+   - On recent macOS versions the right-click dialog may only offer "Done". If so, open **System Settings > Privacy & Security**, scroll down and click **Open Anyway** next to Awayke, then confirm.
+4. A small candle appears in your menu bar. Click it to switch Awayke on, then close the lid.
 
-| Other ways | |
-|---|---|
-| **Download** | Grab the [latest release](https://github.com/Aboudjem/Sleepless/releases/latest), unzip to `/Applications`, then approve it in **System Settings → Privacy & Security → Open Anyway** (it is ad-hoc signed). |
-| **Build from source** | `git clone https://github.com/Aboudjem/Sleepless.git && cd Sleepless && ./install.sh` (no Gatekeeper prompt). |
+Awayke needs macOS 26 (Tahoe) or later and is tested on Apple Silicon.
 
-Then click the cup in the menu bar, flip the switch, and close the lid.
+## The one-time permission
 
-## Features
+Keeping a Mac awake with the lid closed means changing a protected system setting, which normally needs an administrator password every time. A menu bar app cannot type a password for you, so the first time you switch Awayke on it explains this and asks for permission **once**, using the normal macOS Touch ID or password prompt.
 
-| | | |
-|---|---|---|
-| ☕ | **One switch** | Click the menu-bar cup, flip the toggle. |
-| ⏲️ | **Auto-off timer** | 1h or 2h with a live countdown, then off. |
-| 🔋 | **Battery floor** | Auto-off at 5–50% on battery (default 15%). |
-| 🪫 | **Low Power Mode** | Steps aside when LPM is on, on battery. |
-| 🖥️ | **No dongle** | Lid closed, on battery. No monitor, no HDMI plug. |
-| 🚀 | **Launch at login** | Optional, off by default, always starts idle. |
-| 🪶 | **Tiny + native** | One AppKit file. No Dock icon, daemon, or kext. |
-
-**Menu-bar glyph:** empty cup = off · full cup = awake · full cup + dot = awake on battery (auto-off live).
-
-## Sleepless vs the alternatives
-
-| | **Sleepless** | Amphetamine | KeepingYouAwake | `caffeinate` |
-|---|:---:|:---:|:---:|:---:|
-| Awake, lid closed, no monitor | ✅ ¹ | ⚠️ ² | ❌ ³ | ❌ |
-| On battery | ✅ | ✅ | ✅ lid open | ⚠️ ⁴ |
-| Auto-off timer | ✅ | ✅ | ✅ | ❌ |
-| Auto-off on low battery | ✅ | ✅ | ✅ | ❌ |
-| Open source | ✅ MIT | ❌ App Store | ✅ MIT | Apple |
-| Cost | Free | Free | Free | Free |
-
-<sub>As of 2026-06. ¹ Uses `pmset disablesleep` and reads the flag back; behavior is hardware/macOS-version dependent. ² Documents closed-display mode but is widely reported to fail on Apple Silicon on power-source changes ([AE #28](https://github.com/x74353/Amphetamine-Enhancer/issues/28)); the app is closed source. ³ Can't do lid-closed by design, it wraps `caffeinate` ([#66](https://github.com/newmarcel/KeepingYouAwake/issues/66)). ⁴ `caffeinate -i` runs on battery; `-s` is AC-only.</sub>
-
-## Use it to
-
-- 🤖 Finish overnight jobs lid-closed: agent runs, builds, renders, ML training.
-- 📡 Share a hotspot from your bag.
-- ⬇️ Leave big downloads, uploads, or backups running.
-- 🖥️ Keep a local server or SSH session reachable.
-
-> [!TIP]
-> Set a battery floor you trust (say 20%) plus a timer, and you can walk away without babysitting the battery.
-
-## How it works
-
-Sleepless toggles `pmset disablesleep` (the kernel's `SleepDisabled` flag), reads it back so the menu bar never lies, and reverts it at your battery floor, in Low Power Mode, when the timer ends, or on reboot. A GUI app can't type a password, so the installer adds a scoped sudoers rule for **exactly two commands**:
+With that permission it installs one small rule that lets your user account run exactly two commands without a password:
 
 ```
 <you> ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 0, /usr/bin/pmset -a disablesleep 1
 ```
 
-- **Can't be widened.** sudoers matches arguments literally, no wildcards.
-- **Nothing to hijack.** No daemon, no helper script, no shell. It calls `/usr/bin/pmset` directly.
-- **Always reversible.** Reboot, the floor, the timer, or `./uninstall.sh` (which proves the grant is gone).
+In plain terms: "turn lid-close sleep off" and "turn lid-close sleep back on". Nothing else. The rule cannot be stretched to run other commands, because macOS matches the command and its options exactly. It lives in one file, `/etc/sudoers.d/sleepless-disablesleep` (the file name is kept from the original Sleepless project so existing installs keep working), and the uninstaller removes it.
 
-Verify a download, no Apple account needed:
+The setting itself resets to normal sleep whenever the Mac restarts. The full security write-up is in [SECURITY.md](SECURITY.md), and [docs/AUDIT.md](docs/AUDIT.md) shows how to check everything yourself.
+
+## Build from source
+
+You only need Apple's Command Line Tools (`xcode-select --install`). There is no Xcode project.
 
 ```sh
-shasum -a 256 -c SHA256SUMS
-gh attestation verify Sleepless-*.zip -R Aboudjem/Sleepless
+git clone https://github.com/Solomon-69/Awayke.git
+cd Awayke
+./build.sh                 # builds ./build/Awayke.app (ad-hoc signed)
+open build/Awayke.app
 ```
 
-Full threat model, the App Store verdict, and the audit guide: [SECURITY.md](SECURITY.md) · [docs/AUDIT.md](docs/AUDIT.md).
+Or install it in one go:
+
+```sh
+./install.sh               # builds into /Applications, installs the permission rule and a login item
+```
+
+`install.sh` prints exactly what it is going to write before it asks you to continue. Apps you build yourself are not blocked by Gatekeeper, so there is no "Open Anyway" step.
+
+## Uninstall
+
+From a clone of this repository:
+
+```sh
+./uninstall.sh
+```
+
+Or, if you only have the app:
+
+```sh
+/Applications/Awayke.app/Contents/Resources/uninstall.sh
+```
+
+It restores normal sleep, quits Awayke, removes the app and its login item, deletes the permission rule (macOS asks for your password once, on purpose) and then checks that the rule is really gone. Saved settings can be cleared with:
+
+```sh
+defaults delete com.aboudjem.Sleepless
+```
 
 ## FAQ
 
 <details>
-<summary><b>Does <code>pmset disablesleep</code> still work on Apple Silicon (M1/M2/M3)?</b></summary>
-
-Yes. `pmset -a disablesleep 1` sets the kernel's `SleepDisabled` flag on Apple Silicon, confirmed firsthand on macOS 26.3, which keeps the Mac awake with the lid closed on battery. Verify with `pmset -g | grep SleepDisabled` (it should read `1`). Claims that it "stopped working" usually describe `caffeinate` or caffeinate-based apps, a different mechanism.
-</details>
-
-<details>
-<summary><b>Why does my Mac sleep on lid close even with Amphetamine or KeepingYouAwake?</b></summary>
-
-Those use macOS power assertions, which stop the idle timer but can't override the hardware lid-close trigger. KeepingYouAwake wraps `caffeinate`, which can't do lid-closed ([#66](https://github.com/newmarcel/KeepingYouAwake/issues/66)). `pmset disablesleep`, which Sleepless uses, can.
-</details>
-
-<details>
 <summary><b>Is it safe? Will it overheat or drain the battery?</b></summary>
 
-It is safe for light unattended work (downloads, syncs, a hotspot). Heavy sustained load with the lid fully shut reduces airflow, so use judgement. The battery floor, Low Power Mode auto-off, and the timer all stop it before it drains the Mac.
+It is fine for light unattended work such as downloads, syncing or a hotspot. Heavy sustained work with the lid fully shut reduces airflow, so use judgement. The low-battery cutoff, Low Power Mode switch-off and the timer all stop it before the battery runs flat.
 </details>
 
 <details>
-<summary><b>Does it need sudo, a kernel extension, or a daemon?</b></summary>
+<summary><b>Does it need a kernel extension or a background service?</b></summary>
 
-One tightly scoped `sudo` grant (two exact `pmset` commands) so a GUI app can flip the setting without a prompt. No kernel extension, no daemon. The whole app is a single AppKit file.
+No. It is a small native app with no kernel extension, no background helper and no Dock icon. The only special access is the two-command rule described above.
 </details>
 
 <details>
-<summary><b>How do I stop it or remove it?</b></summary>
+<summary><b>Does it collect any data?</b></summary>
 
-Flip the switch off, or let the timer or battery floor do it, and normal sleep returns. A reboot also resets it. `./uninstall.sh` removes the app, login item, and the sudoers grant, then proves the grant is gone.
+No. Awayke makes no network connections and has no analytics. Its settings are stored locally in macOS user defaults.
 </details>
 
-<details>
-<summary><b>Why isn't it notarized?</b></summary>
+## Credits
 
-It is a personal open-source tool with no paid Apple Developer ID, so it is ad-hoc signed. Build from source to skip Gatekeeper, or use **Open Anyway** for the prebuilt app. The notarization steps are documented in [docs/AUDIT.md](docs/AUDIT.md).
-</details>
+Awayke is a fork of [**Sleepless**](https://github.com/Aboudjem/Sleepless) by **Adam Boudjemaa**, released under the MIT License. The keep-awake mechanism, the scoped permission rule, the safety nets and the security documentation all come from his work. Awayke adds a redesigned panel and Settings window, a new flame icon and name, and a few extra options. Thank you, Adam.
 
 ## Contributing
 
-Issues and PRs welcome, especially translations and reports from other hardware. See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md). Sleepless stays deliberately small.
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md). Awayke stays deliberately small.
 
-## License
+## Licence
 
-[MIT](LICENSE) © 2026 Adam Boudjemaa.
-
-<p align="center">
-  <sub>If Sleepless saved you a trip to Terminal, a ⭐ helps other people find it.</sub>
-</p>
+[MIT](LICENSE). Copyright (c) 2026 Adam Boudjemaa (original Sleepless) and Copyright (c) 2026 Solomon (Awayke changes).

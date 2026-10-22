@@ -1,4 +1,4 @@
-<!-- Thanks for contributing to Sleepless! Keep PRs small and focused. -->
+<!-- Thanks for contributing to Awayke! Keep PRs small and focused. -->
 
 ## What does this change?
 

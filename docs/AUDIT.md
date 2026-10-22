@@ -1,6 +1,6 @@
-# Audit & verify Sleepless
+# Audit and verify Awayke
 
-Sleepless asks for a narrow slice of root, so it should be easy to check, not taken on
+Awayke asks for a narrow slice of root, so it should be easy to check, not taken on
 faith. This page is the practical companion to [SECURITY.md](../SECURITY.md): the latter
 explains *why* the design is safe, this one shows you *how to confirm it yourself* and how
 to verify a download you did not build.
@@ -10,11 +10,12 @@ machine.
 
 ## Read it in about ten minutes
 
-The whole app is one file. To satisfy yourself it does what it claims and nothing else:
+The whole app is five small Swift files. To satisfy yourself it does what it claims and nothing else:
 
 | Read | What you are checking |
 |---|---|
-| [`App.swift`](../App.swift) | The only thing it runs as root is `sudo -n /usr/bin/pmset -a disablesleep 0/1` (`setDisableSleep`). No network calls, no file writes outside `UserDefaults`, no shell strings. |
+| [`App.swift`](../App.swift) | The only thing it runs as root is `sudo -n /usr/bin/pmset -a disablesleep 0/1` (`setDisableSleep`), plus the one-time setup that runs the bundled `grant.sh` through the standard macOS authentication prompt (`installGrantViaAuth`). No network calls, no file writes outside `UserDefaults`. |
+| [`PopoverView.swift`](../PopoverView.swift), [`SettingsView.swift`](../SettingsView.swift), [`Glyph.swift`](../Glyph.swift), [`SmoothSwitch.swift`](../SmoothSwitch.swift) | Interface only: the panel, the Settings window, the menu bar candle and the switch control. |
 | [`sleepless.sudoers.template`](../sleepless.sudoers.template) / [`grant.sh`](../grant.sh) | The passwordless grant permits exactly those two fully-specified commands, no wildcards, installed `root:wheel 0440`. |
 | [`build.sh`](../build.sh) | `swiftc` + a hand-assembled, ad-hoc-signed bundle. No downloaded blobs, no install-time scripts baked into the binary. |
 | [`uninstall.sh`](../uninstall.sh) | Removes the app, the login item, and the sudoers drop-in, then proves `sudo -n pmset …` prompts again. |
@@ -31,9 +32,9 @@ build-provenance attestation. Two checks, both offline-friendly:
 # 1. Integrity: the bytes match what the release published.
 shasum -a 256 -c SHA256SUMS
 
-# 2. Provenance: this exact zip was built by Sleepless's GitHub Actions release
+# 2. Provenance: this exact zip was built by Awayke's GitHub Actions release
 #    workflow, from this repo, at the released commit (SLSA Build L2, Sigstore-signed).
-gh attestation verify Sleepless-<version>.zip -R Aboudjem/Sleepless
+gh attestation verify Awayke-<version>.zip -R Solomon-69/Awayke
 ```
 
 What each one proves:
@@ -56,16 +57,19 @@ The compile is deterministic for a given toolchain, so you can rebuild and compa
 **unsigned executable** byte for byte:
 
 ```sh
-git clone https://github.com/Aboudjem/Sleepless.git
-cd Sleepless && git checkout v<version>
+git clone https://github.com/Solomon-69/Awayke.git
+cd Awayke && git checkout v<version>
 
 # Rebuild the executable with the release's deployment target.
-swiftc -O -parse-as-library -target arm64-apple-macos13.0 \
-  -framework AppKit -framework ServiceManagement App.swift -o /tmp/Sleepless-rebuilt
+swiftc -O -parse-as-library -target arm64-apple-macos26.0 \
+  -framework AppKit -framework ServiceManagement -framework SwiftUI -framework IOKit \
+  App.swift Glyph.swift PopoverView.swift SettingsView.swift SmoothSwitch.swift \
+  -o /tmp/Awayke-rebuilt
 
 # Unzip the release and compare the Mach-O inside the bundle.
-ditto -x -k Sleepless-<version>.zip /tmp/rel
-shasum -a 256 /tmp/Sleepless-rebuilt /tmp/rel/Sleepless.app/Contents/MacOS/Sleepless
+# (The executable inside Awayke.app keeps its original name, Sleepless.)
+ditto -x -k Awayke-<version>.zip /tmp/rel
+shasum -a 256 /tmp/Awayke-rebuilt /tmp/rel/Awayke.app/Contents/MacOS/Sleepless
 ```
 
 Caveats, stated honestly:
@@ -90,7 +94,7 @@ non-commercial, results public) for a multi-engine scan:
 # With a free VirusTotal API key:
 curl -s --request POST --url https://www.virustotal.com/api/v3/files \
   --header "x-apikey: $VT_API_KEY" \
-  --form file=@Sleepless-<version>.zip
+  --form file=@Awayke-<version>.zip
 # …then open the returned analysis URL, or just drag the zip onto virustotal.com.
 ```
 
@@ -98,13 +102,10 @@ Note: ad-hoc-signed, unnotarized binaries draw more *heuristic* flags than notar
 read any detection in context. A clean result is reassuring, not absolute; pair it with the
 attestation above.
 
-**Public VirusTotal report (v1.1.0):** https://www.virustotal.com/gui/file/30a43590629b6a3cd2e1610c249c137c4b235a5f319ce8d8a9e866c1fd914cde
-
-That is the permalink for the v1.1.0 zip (the SHA-256 matches `SHA256SUMS`). It goes live once the file is submitted to VirusTotal. Browser submission requires a one-time reCAPTCHA, so submit it from your browser (drag the zip onto virustotal.com) or with the API.
 
 ## Notarization (planned, not yet done)
 
-Sleepless is ad-hoc signed and **not notarized** today, because notarization needs a paid
+Awayke is ad-hoc signed and **not notarized** today, because notarization needs a paid
 Apple Developer ID. It is on the roadmap. The exact steps, for transparency and so anyone can
 do it from a fork, are:
 
@@ -115,16 +116,16 @@ xcrun notarytool store-credentials "notarytool-password" \
 
 # Re-sign with a Developer ID cert + hardened runtime + secure timestamp.
 codesign --force --options runtime --timestamp \
-  --sign "Developer ID Application: <Name> (<TeamID>)" Sleepless.app
+  --sign "Developer ID Application: <Name> (<TeamID>)" Awayke.app
 
-ditto -c -k --keepParent Sleepless.app Sleepless.zip
-xcrun notarytool submit Sleepless.zip --keychain-profile "notarytool-password" --wait
-xcrun stapler staple Sleepless.app
+ditto -c -k --keepParent Awayke.app Awayke.zip
+xcrun notarytool submit Awayke.zip --keychain-profile "notarytool-password" --wait
+xcrun stapler staple Awayke.app
 ```
 
 Prerequisite: [Apple Developer Program, $99/yr](https://developer.apple.com/programs/whats-included/),
 and a "Developer ID Application" certificate. Notarization removes the
 "Apple could not verify this app" first-launch block; it does not change anything about how
-the app works. The `/etc/sudoers.d` install step is what makes Sleepless ineligible for the
+the app works. The `/etc/sudoers.d` install step is what makes Awayke ineligible for the
 Mac App **Store**, but it does not block notarized *direct* distribution (notarization is an
 automated malware scan, not a behavioral policy review).

@@ -22,7 +22,7 @@ permissions:
 jobs:
   release:
     name: Build, attest, and publish
-    runs-on: macos-latest
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
 
@@ -40,20 +40,19 @@ jobs:
           swiftc --version
           echo "SDK: $(xcrun --sdk macosx --show-sdk-version 2>/dev/null || echo n/a)"
 
-      - name: Build Sleepless.app
+      - name: Build Awayke.app
         run: |
           set -euo pipefail
-          # Conservative deployment target so it compiles against the runner SDK and
-          # runs on macOS 13+. (Local + tested target is arm64-apple-macos26.0.)
-          TARGET="arm64-apple-macos13.0" ./build.sh "$PWD/dist"
-          codesign --verify --verbose=1 "dist/Sleepless.app"
+          # Same deployment target as local builds (the app needs macOS 26).
+          ./build.sh "$PWD/dist"
+          codesign --verify --verbose=1 "dist/Awayke.app"
 
       - name: Zip the app bundle
         id: zip
         run: |
           set -euo pipefail
-          ASSET="Sleepless-${{ steps.ver.outputs.version }}.zip"
-          ditto -c -k --keepParent "dist/Sleepless.app" "$ASSET"
+          ASSET="Awayke-${{ steps.ver.outputs.version }}.zip"
+          ditto -c -k --keepParent "dist/Awayke.app" "$ASSET"
           echo "asset=$ASSET" >> "$GITHUB_OUTPUT"
           ls -la "$ASSET"
 
@@ -98,9 +97,9 @@ jobs:
           ASSET="${{ steps.zip.outputs.asset }}"
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$ASSET" SHA256SUMS --clobber
-            gh release edit "$TAG" --notes-file NOTES.md --title "Sleepless ${{ steps.ver.outputs.version }}"
+            gh release edit "$TAG" --notes-file NOTES.md --title "Awayke ${{ steps.ver.outputs.version }}"
           else
             gh release create "$TAG" "$ASSET" SHA256SUMS \
-              --title "Sleepless ${{ steps.ver.outputs.version }}" \
+              --title "Awayke ${{ steps.ver.outputs.version }}" \
               --notes-file NOTES.md
           fi

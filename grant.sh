@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# grant.sh — install ONLY the passwordless grant that lets Sleepless toggle lid-close
+# grant.sh: install ONLY the passwordless grant that lets Awayke toggle lid-close
 # sleep without a prompt. Self-contained: works from a clone OR from inside the app
-# bundle (Contents/Resources), so Homebrew-cask users can run it after install.
+# bundle (Contents/Resources), so people who downloaded only the app can run it.
 #
 # It writes one tightly scoped sudoers drop-in (root:wheel, 0440) permitting exactly two
 # commands and nothing else. See SECURITY.md. Undo with uninstall.sh (or sudo rm the file).
@@ -36,7 +36,7 @@ else
   GRANT="$USER_NAME ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 0, /usr/bin/pmset -a disablesleep 1"
 fi
 
-echo "Sleepless will install this passwordless grant at $SUDOERS_DST (root:wheel, 0440):"
+echo "Awayke will install this passwordless grant at $SUDOERS_DST (root:wheel, 0440):"
 echo ""
 echo "    $GRANT"
 echo ""
@@ -54,5 +54,5 @@ if ! $SUDO visudo -cf "$TMP" >/dev/null; then
 fi
 $SUDO install -m 0440 -o root -g wheel "$TMP" "$SUDOERS_DST"
 rm -f "$TMP"
-$SUDO visudo -c >/dev/null && echo "✅ grant installed and sudoers parses cleanly ($SUDOERS_DST)."
-echo "   Toggle Sleepless from the menu bar; it will no longer need a password."
+$SUDO visudo -c >/dev/null && echo "Grant installed and sudoers parses cleanly ($SUDOERS_DST)."
+echo "   Toggle Awayke from the menu bar; it will no longer need a password."

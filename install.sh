@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install.sh — build Sleepless, install it to /Applications, add the passwordless
+# install.sh: build Awayke, install it to /Applications, add the passwordless
 # grant that lets it toggle lid-close sleep, and (optionally) start it at login.
 #
 # This is the ONLY script that touches sudo. It tells you exactly what it will write
@@ -7,15 +7,15 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APP_NAME="Sleepless"
+APP_NAME="Awayke"
 APP="/Applications/$APP_NAME.app"
-BUNDLE_ID="com.aboudjem.Sleepless"
-SUDOERS_DST="/etc/sudoers.d/sleepless-disablesleep"
+BUNDLE_ID="com.aboudjem.Sleepless"   # inherited from Sleepless; kept so settings and login items carry over
+SUDOERS_DST="/etc/sudoers.d/sleepless-disablesleep"   # same file name as Sleepless, see SECURITY.md
 LAUNCH_AGENT="$HOME/Library/LaunchAgents/$BUNDLE_ID.plist"
 USER_NAME="$(id -un)"
 
-echo "Sleepless installer"
-echo "==================="
+echo "Awayke installer"
+echo "================"
 echo "This will:"
 echo "  1. Build $APP_NAME.app and copy it to /Applications."
 echo "  2. Install a passwordless sudo grant at $SUDOERS_DST so the app can flip"
@@ -23,7 +23,7 @@ echo "     lid-close sleep without prompting. The grant (root:wheel, 0440) is EX
 echo ""
 echo "       $USER_NAME ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 0, /usr/bin/pmset -a disablesleep 1"
 echo ""
-echo "     That is the only thing it permits — turn lid-close sleep on or off. Nothing else."
+echo "     That is the only thing it permits: turn lid-close sleep on or off. Nothing else."
 echo "  3. Add a login item (~/Library/LaunchAgents/$BUNDLE_ID.plist) so it starts at login."
 echo ""
 read -r -p "Continue? [y/N] " reply
@@ -60,6 +60,6 @@ launchctl bootstrap "gui/$(id -u)" "$LAUNCH_AGENT" 2>/dev/null || true
 open "$APP"
 
 echo ""
-echo "✅ Installed. The coffee cup is in your menu bar — click it to toggle."
+echo "Installed. The candle is in your menu bar: click to toggle, hold to open the panel."
 echo "   Turn ON, close the lid: your Mac stays awake on battery (auto-off at the floor you set)."
 echo "   To remove everything (including the grant): ./uninstall.sh"

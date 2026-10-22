@@ -22,3 +22,6 @@ Sleepless.iconset/
 .idea/
 *.swp
 .omc/
+
+# Local design scratch files (not part of the app)
+design-options.html
