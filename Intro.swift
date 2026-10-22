@@ -126,7 +126,7 @@ struct IntroView: View {
                 .frame(width: 28, height: 28)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(ready ? "All set" : "Not set up yet").font(.system(size: 13, weight: .medium))
-                    Text(ready ? "Awayke can switch on with one click." : "You can also do it later, when you first switch it on.")
+                    Text(ready ? "Awayke can switch on with one click." : "Or do it later, any time.")
                         .font(.system(size: 11)).foregroundStyle(.secondary)
                 }
                 Spacer()
