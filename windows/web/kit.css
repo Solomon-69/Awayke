@@ -137,3 +137,42 @@ input[type=range]::-webkit-slider-thumb {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition-duration: 0s !important; }
 }
+
+/* ---------- first-run welcome (kit.intro) ---------- */
+#root.intro-on > :not(.intro) { display: none; }
+.intro { display: flex; flex-direction: column; gap: 14px; padding: 6px 2px 0; }
+.intro.leaving { animation: intro-leave .22s var(--ease) both; }
+.intro-stage { display: grid; overflow: hidden; min-height: 330px; align-items: start; }
+.intro-page { grid-area: 1 / 1; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.intro-page > * { animation: intro-rise .6s cubic-bezier(.22, 1.12, .36, 1) both; animation-delay: calc(60ms + var(--i, 0) * 65ms); }
+.intro-page.in-next { animation: intro-in-next .5s cubic-bezier(.22, 1.08, .36, 1) both; }
+.intro-page.in-prev { animation: intro-in-prev .5s cubic-bezier(.22, 1.08, .36, 1) both; }
+.intro-page.out-next { animation: intro-out-next .32s var(--ease) both; }
+.intro-page.out-prev { animation: intro-out-prev .32s var(--ease) both; }
+.intro-page.out-next > *, .intro-page.out-prev > * { animation: none; }
+.intro-art { width: 64px; height: 64px; border-radius: 18px; display: grid; place-items: center; margin-top: 6px;
+  background: linear-gradient(140deg, var(--accent), var(--accent-deep, var(--accent))); color: #fff;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 35%, transparent); }
+.intro-art svg { width: 32px; height: 32px; }
+.intro-art.app { width: 78px; height: 78px; border-radius: 20px; animation-name: intro-pop; }
+.intro-page h2 { margin: 4px 0 0; font-size: 19px; font-weight: 650; letter-spacing: -.01em; }
+.intro-text { margin: 0 6px; font-size: 12.5px; color: var(--dim); line-height: 1.45; }
+.intro-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; text-align: left; }
+.intro-foot { display: flex; align-items: center; gap: 10px; }
+.intro-dots { flex: 1; display: flex; justify-content: center; gap: 6px; }
+.intro-dots i { width: 6px; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--text) 18%, transparent);
+  transition: width .4s var(--spring), background .3s var(--ease); }
+.intro-dots i.on { width: 18px; background: var(--accent); }
+.intro-next { min-width: 96px; height: 32px; border-radius: 16px; font-weight: 600; }
+@keyframes intro-rise { from { opacity: 0; transform: translateY(14px); filter: blur(4px); } }
+@keyframes intro-pop { 0% { opacity: 0; transform: scale(.6); } 60% { opacity: 1; transform: scale(1.06); } 100% { transform: none; } }
+@keyframes intro-in-next { from { opacity: 0; transform: translateX(40px); } }
+@keyframes intro-in-prev { from { opacity: 0; transform: translateX(-40px); } }
+@keyframes intro-out-next { to { opacity: 0; transform: translateX(-40px); } }
+@keyframes intro-out-prev { to { opacity: 0; transform: translateX(40px); } }
+@keyframes intro-leave { to { opacity: 0; transform: translateY(-6px) scale(.98); } }
+@media (prefers-reduced-motion: reduce) {
+  .intro-page > *, .intro-page.in-next, .intro-page.in-prev, .intro-art.app { animation: intro-fade .2s ease both; animation-delay: 0s; }
+  .intro-dots i { transition: none; }
+}
+@keyframes intro-fade { from { opacity: 0; } }

@@ -182,7 +182,86 @@
   // Animated show/hide for a block (height via grid rows, plus fade).
   function reveal(node, open) { node.classList.toggle('open', !!open); node.setAttribute('aria-hidden', String(!open)); }
 
-  window.kit = { post, el, sw, chips, drum, chipDrum, duration, pad, opened, closed, fadeOut, setDark, reveal, reportHeight };
+
+  // First-run welcome: a few pages shown in place of the panel, each part rising in a moment after the
+  // one above it, pages sliding left and right. pages: [{ art, title, text, items: [{ icon, title, detail }],
+  // extra: element, app: true for the big first-page tile }]. opts: { done: 'Get started', onDone(finished) }. Returns { close }.
+  function intro(pages, opts) {
+    const root = document.getElementById('root');
+    const box = el('div', 'intro');
+    const stage = el('div', 'intro-stage');
+    const foot = el('div', 'intro-foot');
+    const back = el('button', 'btn plain'), dots = el('div', 'intro-dots'), next = el('button', 'btn solid intro-next');
+    pages.forEach(() => dots.appendChild(el('i')));
+    foot.append(back, dots, next);
+    box.append(stage, foot);
+    let page = -1;
+
+    function build(p) {
+      const v = el('div', 'intro-page');
+      let i = 0;
+      const add = n => { n.style.setProperty('--i', i++); v.appendChild(n); };
+      if (p.art) { const a = el('div', 'intro-art' + (p.app ? ' app' : '')); a.innerHTML = p.art; add(a); }
+      add(el('h2', '', p.title));
+      if (p.text) add(el('p', 'intro-text', p.text));
+      (p.items || []).forEach(it => {
+        const r = el('div', 'card intro-item');
+        const ic = el('div', 'icon'); ic.innerHTML = it.icon || '';
+        const g = el('div', 'grow');
+        g.append(el('div', 'title', it.title), el('div', 'detail', it.detail));
+        r.append(ic, g);
+        add(r);
+      });
+      if (p.extra) add(p.extra);
+      return v;
+    }
+
+    function go(n) {
+      if (n < 0 || n >= pages.length || n === page) return;
+      const dir = n > page ? 'next' : 'prev';
+      const old = stage.firstChild;
+      const v = build(pages[n]);
+      if (old && !reduce.matches) {
+        old.classList.add('out-' + dir);
+        old.addEventListener('animationend', () => old.remove(), { once: true });
+        setTimeout(() => old.remove(), 400);
+      } else if (old) old.remove();
+      if (page >= 0) v.classList.add('in-' + dir);
+      stage.appendChild(v);
+      page = n;
+      dots.childNodes.forEach((d, k) => d.classList.toggle('on', k === n));
+      back.textContent = n === 0 ? 'Skip' : 'Back';
+      next.textContent = n === pages.length - 1 ? (opts.done || 'Get started') : 'Continue';
+      reportHeight();
+    }
+
+    function close(finished) {
+      box.classList.add('leaving');
+      const end = () => {
+        box.remove();
+        root.classList.remove('intro-on', 'in');
+        void root.offsetWidth;
+        root.classList.add('in');
+        reportHeight();
+      };
+      if (reduce.matches) end(); else setTimeout(end, 220);
+      if (opts.onDone) opts.onDone(!!finished);
+    }
+
+    back.onclick = () => page === 0 ? close(false) : go(page - 1);
+    next.onclick = () => page === pages.length - 1 ? close(true) : go(page + 1);
+    box.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight') next.click();
+      if (e.key === 'ArrowLeft' && page > 0) back.click();
+    });
+    root.classList.add('intro-on');
+    root.prepend(box);
+    go(0);
+    next.focus();
+    return { close, go };
+  }
+
+  window.kit = { post, el, sw, chips, drum, chipDrum, duration, pad, opened, closed, fadeOut, setDark, reveal, reportHeight, intro };
 
   addEventListener('DOMContentLoaded', () => {
     const root = document.getElementById('root');
