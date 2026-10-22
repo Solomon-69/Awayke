@@ -180,11 +180,15 @@ struct SettingsView: View {
                             Text("Only Off for now").font(.system(size: 12)).foregroundStyle(.tertiary)
                         }
                     }
-                    HStack(spacing: 10) {
-                        Stepper(value: $newTimer, in: 5...maxTimerMinutes, step: newTimer < 60 ? 5 : 15) {
-                            Text(timerLabel(newTimer, long: true)).font(.system(size: 12.5)).monospacedDigit()
-                                .frame(minWidth: 110, alignment: .leading)
-                        }
+                    // Pick a length with a chip or the drum, then add it as a panel button.
+                    ChipDrumPicker(title: "New timer", value: newTimer, mode: .duration(5...maxTimerMinutes),
+                                   presets: [15, 30, 60, 120], tint: accent, chipColumns: 4,
+                                   label: { timerLabel($0) }) { newTimer = $0 }
+                        .padding(.top, 4)
+                    HStack {
+                        Text(timerLabel(newTimer, long: true)).font(.system(size: 12.5)).monospacedDigit()
+                            .foregroundStyle(.secondary)
+                        Spacer()
                         Button("Add") {
                             model.timerChoices.append(newTimer)
                             model.onSettingsChanged()
@@ -352,10 +356,10 @@ private struct SettingsCard<Content: View>: View {
         VStack(alignment: .leading, spacing: 0) { content }
             .frame(maxWidth: .infinity, alignment: .leading)
             .background {
-                RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary.opacity(0.045))
+                RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.primary.opacity(0.045))
             }
             .overlay {
-                RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
             }
     }
 }
