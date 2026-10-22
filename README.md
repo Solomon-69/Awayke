@@ -7,10 +7,9 @@
 <p><b>Keep your MacBook awake with the lid closed. One click in the menu bar.</b></p>
 
 <p>
-  <a href="https://github.com/Solomon-69/Awayke/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Solomon-69/Awayke?style=flat-square&color=E07B00&label=release"></a>
-  <a href="https://github.com/Solomon-69/Awayke/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/Solomon-69/Awayke/total?style=flat-square&color=E07B00"></a>
+  <a href="https://github.com/Solomon-69/Awayke/releases/latest"><img alt="Version 1.4.0" src="https://img.shields.io/badge/version-1.4.0-E07B00?style=flat-square"></a>
   <img alt="macOS 26 or later, Apple silicon" src="https://img.shields.io/badge/macOS-26%2B-1f1d1a?style=flat-square&logo=apple&logoColor=white">
-  <a href="LICENSE"><img alt="MIT licence" src="https://img.shields.io/github/license/Solomon-69/Awayke?style=flat-square&color=5b8a5a"></a>
+  <a href="LICENSE"><img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-5b8a5a?style=flat-square"></a>
   <img alt="No telemetry" src="https://img.shields.io/badge/telemetry-none-5b8a5a?style=flat-square">
 </p>
 
