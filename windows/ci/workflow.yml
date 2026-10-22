@@ -1,0 +1,64 @@
+name: Windows test
+
+# Builds the Windows app, runs it on a real Windows machine, checks it works and keeps screenshots.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build (self-contained, single file)
+        shell: pwsh
+        run: dotnet publish windows/__APP__.csproj -c Release -o out/__APP__
+
+      - name: Make sure WebView2 is installed
+        shell: pwsh
+        run: |
+          $keys = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}',
+                  'HKCU:\Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
+          if ($keys | Where-Object { Test-Path $_ }) { Write-Host 'WebView2 runtime present'; exit 0 }
+          Write-Host 'Installing WebView2 runtime'
+          Invoke-WebRequest 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' -OutFile wv2.exe
+          Start-Process .\wv2.exe -ArgumentList '/silent','/install' -Wait
+
+      - name: Run and check
+        shell: pwsh
+        run: ./windows/ci/test.ps1 -Exe out/__APP__/__APP__.exe -Shots shots
+
+      - name: Keep the app logs
+        if: always()
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force shots | Out-Null
+          Copy-Item "$env:APPDATA\__APP__\*.log" shots -ErrorAction SilentlyContinue
+          Copy-Item "$env:APPDATA\__APP__\*.json" shots -ErrorAction SilentlyContinue
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: __APP__-screenshots
+          path: shots
+          retention-days: 14
+
+      - name: Zip the app
+        shell: pwsh
+        run: Compress-Archive -Path out/__APP__/* -DestinationPath __APP__-windows.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: __APP__-windows
+          path: __APP__-windows.zip
+          retention-days: 14
