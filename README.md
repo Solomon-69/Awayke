@@ -7,7 +7,7 @@
 <p><b>Keep your MacBook awake with the lid closed. One click in the menu bar.</b></p>
 
 <p>
-  <a href="https://github.com/Solomon-69/Awayke/releases/latest"><img alt="Latest release" src="https://img.shields.io/badge/download-latest-E07B00?style=flat-square"></a>
+  <a href="https://github.com/Solomon-69/Awayke/releases/latest"><img alt="Version 1.4.0" src="https://img.shields.io/badge/version-1.4.0-E07B00?style=flat-square"></a>
   <img alt="macOS 26 or later, Apple silicon" src="https://img.shields.io/badge/macOS-26%2B-1f1d1a?style=flat-square&logo=apple&logoColor=white">
   <a href="LICENSE"><img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-5b8a5a?style=flat-square"></a>
   <img alt="No telemetry" src="https://img.shields.io/badge/telemetry-none-5b8a5a?style=flat-square">
@@ -24,8 +24,8 @@
 <br>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/img/panel-dark.png">
-  <img src="docs/img/panel-light.png" width="340" alt="The Awayke panel: keep-awake switch, auto-off timer, low-battery cutoff, launch at login and Settings">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/showcase/aw-1-dark.png">
+  <img src="docs/showcase/aw-1-light.png" width="880" alt="The Awayke panel open under its menu bar icon">
 </picture>
 
 </div>
@@ -56,22 +56,58 @@ or SSH session reachable with the lid shut.
 
 ## Features
 
-- **One click.** Click the candle in the menu bar to switch Awayke on or off. A lit candle means awake.
-- **Lid closed, on battery, no external display.** The case `caffeinate` cannot handle.
-- **Auto-off timer.** Off, 30 minutes, 1 hour or 2 hours, with a live countdown. Add your own lengths, from 5 minutes to 24 hours.
-- **Low-battery cutoff.** On battery, Awayke switches itself off at a level you choose, from 5 to 50 percent.
-- **Steps aside in Low Power Mode** if you want it to.
-- **Mac only, or Mac and screen.** Keep just the computer running, or keep the display on too.
-- **Normal sleep always comes back** when you switch it off, quit, restart, or if the app ever crashes.
-- **Your colour.** Pick an accent colour and a coloured or monochrome menu bar icon.
-- **Tiny and native.** No Dock icon, no background helper, no kernel extension, no dependencies.
+Awayke keeps your Mac awake, even with the lid closed, and always hands sleep back safely.
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/img/settings-dark.png">
-    <img src="docs/img/settings-light.png" width="680" alt="The Awayke Settings window, Awake section: what stays awake, and the timer buttons shown in the panel">
-  </picture>
-</p>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/showcase/aw-2-dark.png">
+  <img src="docs/showcase/aw-2-light.png" width="880" alt="The Awayke panel with the low-battery cutoff magnified">
+</picture>
+
+### Stops before your battery does
+
+On battery, Awayke watches the charge and switches itself off at the level you choose, so a forgotten MacBook never runs flat in your bag.
+
+- Pick anywhere from 5 to 50 percent with the slider in the panel.
+- The panel shows the current charge right under the slider.
+- Optionally steps aside when your Mac is in Low Power Mode.
+
+<br>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/showcase/aw-3-dark.png">
+  <img src="docs/showcase/aw-3-light.png" width="880" alt="The Awayke panel with the auto-off timer magnified">
+</picture>
+
+### Awake for as long as you need
+
+Most of the time you only need your Mac awake for a while. Pick a timer and Awayke turns itself off when it runs out, with a live countdown in the panel.
+
+- Off (stay awake until you say), 30 minutes, 1 hour or 2 hours.
+- Add your own timer lengths in Settings, from 5 minutes to 24 hours.
+- Normal sleep always comes back when the timer ends, when you switch it off, quit, restart, or if the app ever crashes.
+
+<br>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/showcase/aw-4-dark.png">
+  <img src="docs/showcase/aw-4-light.png" width="880" alt="The Awayke Settings window, General section">
+</picture>
+
+### Set it up exactly how you like
+
+One tidy Settings window holds everything, split into General, Awake, Battery, Appearance and About.
+
+- <b>Awake:</b> keep just the computer running, or keep the screen on too.
+- <b>Clicks:</b> choose whether a click toggles awake or opens the panel, and how long a hold takes.
+- <b>Appearance:</b> pick an accent colour and a coloured or monochrome menu bar icon.
+- <b>General:</b> launch at login, and an optional Dock icon (off by default).
+
+
+**Why it works with the lid shut:** apps built on `caffeinate` can keep a Mac awake with the lid
+open, but closing the lid still sends it to sleep. Awayke switches the one macOS setting that can
+stop that, using a small permission you approve once, and switches it straight back when you are done.
+Awayke is tiny and native: no background helper, no kernel extension, no telemetry.
+
 
 ## Install
 
