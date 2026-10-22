@@ -55,7 +55,7 @@ body:
       label: How did you install Awayke?
       options:
         - Built from source (build.sh / install.sh)
-        - Downloaded the release .zip
+        - Downloaded the release .dmg or .zip
     validations:
       required: true
   - type: textarea
