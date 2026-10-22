@@ -141,6 +141,8 @@ jobs:
           shasum -a 256 Awayke.dmg "${{ steps.zip.outputs.asset }}" | tee SHA256SUMS
 
       - name: Attest build provenance (SLSA)
+        # GitHub only stores attestations for public repositories.
+        if: ${{ !github.event.repository.private }}
         uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
