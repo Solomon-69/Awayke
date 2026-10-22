@@ -311,6 +311,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case "popover": if !popover.isShown { openPopover(activate: false) }
         case "settings": openSettings(activate: false)
         case "toggle": quickToggle()
+        case "look:light": NSApp.appearance = NSAppearance(named: .aqua)   // app only, for screenshots
+        case "look:dark": NSApp.appearance = NSAppearance(named: .darkAqua)
+        case "look:auto": NSApp.appearance = nil
         case "notify": notify("Test: notifications now come from Awayke.")
         case "quit": quit()
         case "close":
