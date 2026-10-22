@@ -851,7 +851,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Candle flicker: while awake, the flame gently sways between a few pre-drawn frames.
     private var flickerTimer: Timer?
     private var flickerFrames: [NSImage] = []
-    private static let flickerOffsets: [CGFloat] = [-0.8, 0.5, -0.3, 0.9, 0]
+    // A gentle sway played in order (not random picks, which jumped the flame between its
+    // tallest and shortest frames and read as the candle flipping up and down).
+    private static let flickerOffsets: [CGFloat] = [0, 0.18, 0.3, 0.18, 0, -0.18, -0.3, -0.18]
+    private var flickerIndex = 0
 
     private func updateFlicker(awake: Bool) {
         flickerTimer?.invalidate(); flickerTimer = nil
@@ -866,10 +869,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func flickerStep() {
-        guard let button = statusItem.button, let frame = flickerFrames.randomElement() else { return }
+        guard let button = statusItem.button, !flickerFrames.isEmpty, isOn else { return }
+        flickerIndex = (flickerIndex + 1) % flickerFrames.count
+        let frame = flickerFrames[flickerIndex]
         let fade = CATransition()
         fade.type = .fade
-        fade.duration = 0.45
+        fade.duration = 0.5
         button.layer?.add(fade, forKey: "flicker")
         button.image = frame
     }
