@@ -101,6 +101,10 @@ struct SettingsView: View {
                 SettingRow(title: "Launch at login", detail: "Start Awayke when you log in. It always starts switched off.") {
                     SmoothSwitch(isOn: model.launchAtLogin, title: "Launch at login", tint: accent) { want in DispatchQueue.main.async { model.onLogin(want) } }
                 }
+                CardDivider()
+                SettingRow(title: "Show in Dock", detail: "Off: Awayke stays in the menu bar only.") {
+                    SmoothSwitch(isOn: model.showInDock, title: "Show in Dock", tint: accent) { setting(\.showInDock).wrappedValue = $0 }
+                }
             }
             SettingsCard {
                 SettingRow(title: "Single click on the menu bar icon",

@@ -55,6 +55,7 @@ enum Pref {
     static let showTimerRow = "panelShowTimer"
     static let showBatteryRow = "panelShowBattery"
     static let showLoginRow = "panelShowLogin"
+    static let showInDock = "showInDock"                  // false = menu bar only (default)
 }
 
 let maxTimerMinutes = 24 * 60
@@ -107,6 +108,7 @@ final class PopoverModel {
     var showLoginRow = true
     var lowPowerOff = true
     var monochromeIcon = false
+    var showInDock = false
 
     var accent: Color { accentChoice(accentIndex).color }
 

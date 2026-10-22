@@ -90,9 +90,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Renamed/moved app: point the login item at this copy.
         if SMAppService.mainApp.status == .enabled { try? SMAppService.mainApp.register() }
-        NSApp.setActivationPolicy(.accessory)
         batteryFloorPercent = min(max((UserDefaults.standard.object(forKey: floorKey) as? Int) ?? floorDefault, floorMin), floorMax)
         loadSettings()
+        applyDockPolicy()
         autoOffMinutes = model.defaultTimer
         model.autoOffMinutes = autoOffMinutes
         installMainMenu()
@@ -205,6 +205,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.showLoginRow = d.object(forKey: Pref.showLoginRow) as? Bool ?? true
         model.lowPowerOff = (d.object(forKey: Pref.lowPowerOff) as? Bool) ?? true
         model.monochromeIcon = d.bool(forKey: Pref.monochromeIcon)
+        model.showInDock = d.bool(forKey: Pref.showInDock)
+    }
+
+    /// Clicking the Dock icon (when shown) or opening Awayke again from Finder opens Settings.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag { openSettings(activate: true) }
+        return false
+    }
+
+    /// Dock icon only when "Show in Dock" is on. Off (the default), Awayke lives in the menu bar alone.
+    private func applyDockPolicy() {
+        let policy: NSApplication.ActivationPolicy = model.showInDock ? .regular : .accessory
+        if NSApp.activationPolicy() != policy { NSApp.setActivationPolicy(policy) }
     }
 
     private func settingsChanged() {
@@ -222,6 +235,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         d.set(model.showLoginRow, forKey: Pref.showLoginRow)
         d.set(model.lowPowerOff, forKey: Pref.lowPowerOff)
         d.set(model.monochromeIcon, forKey: Pref.monochromeIcon)
+        d.set(model.showInDock, forKey: Pref.showInDock)
+        applyDockPolicy()
         updateDisplayAssertion()
         updateStatusGlyph(animated: true)
         if isOn { enforceSafetyNets() }
