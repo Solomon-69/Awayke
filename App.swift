@@ -64,6 +64,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // Settings window (SwiftUI in an NSWindow, created on first open)
     private var settingsWindow: NSWindow?
+    private var introWindow: NSWindow?
     // "Mac and screen" option: a display-sleep assertion held only while awake
     private var displayAssertion: IOPMAssertionID = 0
     // Hold-to-open feedback on the menu-bar icon
@@ -128,6 +129,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         popover.contentViewController = makeContentController()
 
         refresh()   // reflect TRUE system state on launch (never a stale assumption)
+        if !UserDefaults.standard.bool(forKey: IntroPref.done) { showIntro() }
         timer = Timer.scheduledTimer(timeInterval: pollInterval, target: self,
                                      selector: #selector(poll), userInfo: nil, repeats: true)
     }
@@ -306,7 +308,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.mainMenu = main
     }
 
+    // MARK: - Welcome (shown once after install)
+
+    private func showIntro(page: Int = 0) {
+        introWindow?.close()
+        let w = NSWindow(contentRect: .zero, styleMask: [.titled, .closable, .fullSizeContentView], backing: .buffered, defer: false)
+        w.titlebarAppearsTransparent = true
+        w.titleVisibility = .hidden
+        w.isMovableByWindowBackground = true
+        w.isReleasedWhenClosed = false
+        w.title = "Welcome to Awayke"
+        let actions = IntroActions(
+            permissionReady: { [weak self] in self?.grantInstalled() ?? false },
+            setUpPermission: { [weak self] in _ = self?.installGrantViaAuth(ask: false) },
+            finish: { [weak self] openPanel in
+                UserDefaults.standard.set(true, forKey: IntroPref.done)
+                self?.introWindow?.close()
+                self?.introWindow = nil
+                if openPanel { DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { self?.openPopover(activate: false) } }
+            })
+        w.contentView = NSHostingView(rootView: IntroView(accent: model.accent, actions: actions, page: page))
+        w.setContentSize(w.contentView!.fittingSize)
+        w.center()
+        introWindow = w
+        NSApp.activate(ignoringOtherApps: true)   // a deliberate first-run window
+        w.makeKeyAndOrderFront(nil)
+        w.orderFrontRegardless()
+    }
+
+    /// True when the one-time passwordless rule is in place (asks sudo, never prompts).
+    private func grantInstalled() -> Bool {
+        runPrivileged(["-n", "-l", "/usr/bin/pmset", "-a", "disablesleep", "0"]).exit == 0
+    }
+
     @objc private func debugCommand(_ note: Notification) {
+        let cmd = note.object as? String ?? ""
+        if cmd.hasPrefix("intro") {   // intro or intro:<page 0-2>
+            showIntro(page: Int(cmd.split(separator: ":").last ?? "") ?? 0); return
+        }
+        if cmd == "closeintro" { introWindow?.close(); introWindow = nil; return }
         switch note.object as? String {
         case "popover": if !popover.isShown { openPopover(activate: false) }
         case "settings": openSettings(activate: false)
@@ -636,7 +676,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // root-aware so it writes the sudoers drop-in directly with no inner sudo prompt.
     // Returns true once the passwordless grant is in place; after that the app never asks again.
     @discardableResult
-    private func installGrantViaAuth() -> Bool {
+    private func installGrantViaAuth(ask: Bool = true) -> Bool {
+        if ask {
         let intro = NSAlert()
         intro.alertStyle = .informational
         intro.messageText = "Enable keeping your Mac awake"
@@ -645,6 +686,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         intro.addButton(withTitle: "Not now")
         NSApp.activate(ignoringOtherApps: true)
         guard intro.runModal() == .alertFirstButtonReturn else { return false }
+        }
 
         guard let res = Bundle.main.resourcePath else { return false }
         let grant = res + "/grant.sh"
