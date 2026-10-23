@@ -7,7 +7,7 @@
 <p><b>Keep your MacBook awake with the lid closed. One click in the menu bar.</b></p>
 
 <p>
-  <a href="https://github.com/Solomon-69/Awayke/releases/latest"><img alt="Version 1.4.1" src="https://img.shields.io/badge/version-1.4.1-E07B00?style=flat-square"></a>
+  <a href="https://github.com/Solomon-69/Awayke/releases/latest"><img alt="Version 1.5" src="https://img.shields.io/badge/version-1.5-E07B00?style=flat-square"></a>
   <img alt="macOS 26 or later, Apple silicon" src="https://img.shields.io/badge/macOS-26%2B-1f1d1a?style=flat-square&logo=apple&logoColor=white">
   <a href="LICENSE"><img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-5b8a5a?style=flat-square"></a>
   <img alt="No telemetry" src="https://img.shields.io/badge/telemetry-none-5b8a5a?style=flat-square">
@@ -117,7 +117,7 @@ Awayke is tiny and native: no background helper, no kernel extension, no telemet
   <img src="docs/intro/awayke-welcome-3.png" width="270" alt="Awayke welcome, page three">
 </p>
 
-Version 1.4.1 has a new three-page welcome with a frosted glass panel. Each page plays its animation once. The download buttons give the last published build (1.4.0); the newest version is published when its builds are ready.
+Version 1.5 has a new three-page welcome with a frosted glass panel. Each page plays its animation once.
 
 ## Install
 

@@ -9,7 +9,7 @@ Awayke is a fork of [Sleepless](https://github.com/Aboudjem/Sleepless) by Adam B
 Versions 1.0.0 to 1.2.7 below are the original Sleepless releases and are kept for history.
 
 
-## [1.4.1] - 2026-10-23
+## [1.5] - 2026-10-23
 
 ### Changed
 - New welcome window: frosted glass panel on a plain soft backdrop, logo centred, three short tips on the last page.
@@ -22,7 +22,7 @@ Versions 1.0.0 to 1.2.7 below are the original Sleepless releases and are kept f
   one sway period, it pauses while the screens sleep, and the candle is re-seated on wake and on display changes.
 ## [Unreleased]
 
-## [1.4.1] - 2026-10-23
+## [1.5] - 2026-10-23
 
 ### Changed
 - New welcome window: frosted glass panel on a plain soft backdrop, logo centred and never cut off, three short tips on the last page.
