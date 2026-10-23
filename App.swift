@@ -57,9 +57,9 @@ private let debugNotification = Notification.Name("com.aboudjem.Sleepless.debug"
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var timer: Timer?
-    private let offGlyph = EyeGlyph.image(awake: false)
-    private let awakeTemplateGlyph = EyeGlyph.image(awake: true)
-    private var glyphIsAwake: Bool?          // last glyph state shown (nil = none yet)
+    // The candle is a view drawn on top of the button (see CandleView); the button keeps one clear picture forever.
+    private let candle = CandleView()
+    private let iconPlaceholder = CandleView.placeholder(label: "Awayke")
     private var glyphKey = ""                // state + colour + style, to skip redundant swaps
 
     // Settings window (SwiftUI in an NSWindow, created on first open)
@@ -108,10 +108,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // popover arrow stay put when the state changes.
         statusItem = NSStatusBar.system.statusItem(withLength: statusItemLength)
         if let button = statusItem.button {
-            button.image = offGlyph
+            button.image = iconPlaceholder   // never replaced: the candle view does the drawing
             button.imagePosition = .imageOnly
             button.imageScaling = .scaleNone
             button.wantsLayer = true   // set once here, never toggled later (no relayout on pulse)
+            attachCandle(to: button)
             button.action = #selector(statusClicked)
             button.target = self
             // Quick click = toggle; hold (0.4 s default) or right-click = open the popover.
@@ -124,6 +125,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // a click does; nothing here can do more than the menu-bar icon already can.
         DistributedNotificationCenter.default().addObserver(self, selector: #selector(debugCommand(_:)),
                                                             name: debugNotification, object: nil)
+        let wsc = NSWorkspace.shared.notificationCenter
+        wsc.addObserver(self, selector: #selector(screensSlept(_:)), name: NSWorkspace.screensDidSleepNotification, object: nil)
+        wsc.addObserver(self, selector: #selector(screensWoke(_:)), name: NSWorkspace.screensDidWakeNotification, object: nil)
+        wsc.addObserver(self, selector: #selector(screensWoke(_:)), name: NSWorkspace.didWakeNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(screensWoke(_:)),
+                                               name: NSApplication.didChangeScreenParametersNotification, object: nil)
         popover.behavior = .applicationDefined   // app-managed dismissal (no transient close/reopen flicker)
         popover.animates = true
         popover.contentViewController = makeContentController()
@@ -348,6 +355,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if cmd == "sharetest" { ShareFriend.selfTest(report: "/tmp/awayke-share-test.txt"); return }
         if cmd == "closeintro" { introWindow?.close(); introWindow = nil; return }
+        if cmd.hasPrefix("warp:") {   // warp:<hours>  pretend the candle has been lit that long
+            flickerWarp = (Double(cmd.dropFirst(5)) ?? 0) * 3600; return
+        }
+        if cmd == "iconstress" { iconStress(); return }
         switch note.object as? String {
         case "popover": if !popover.isShown { openPopover(activate: false) }
         case "settings": openSettings(activate: false)
@@ -827,60 +838,97 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         updateCountdownLabel()
     }
 
-    // Menu-bar glyph: OFF = template (white/black by menu bar); AWAKE = accent-filled image
-    // (or template if "Monochrome" is chosen). Swapped with a 0.25 s crossfade; same canvas,
-    // fixed-width item, so no size or position jitter.
+    // Menu-bar candle: OFF = unlit, in the menu bar's own colour; AWAKE = lit, in the accent colour (or the menu bar's
+    // colour when "Monochrome" is chosen). Drawn by CandleView on top of the button: the button's picture is never
+    // swapped and no layer transition is ever added to it (that is what made the candle flip after long awake runs).
+    private func attachCandle(to button: NSStatusBarButton) {
+        if candle.superview !== button { candle.removeFromSuperview(); button.addSubview(candle) }
+        candle.frame = button.bounds
+        candle.autoresizingMask = [.width, .height]
+        candle.needsDisplay = true
+    }
+
     private func updateStatusGlyph(animated: Bool) {
         guard let button = statusItem.button else { return }
         let awake = isOn
         let key = "\(awake)-\(model.accentIndex)-\(model.monochromeIcon)"
         guard key != glyphKey else { return }
         glyphKey = key
-        let image: NSImage
-        if !awake { image = offGlyph }
-        else if model.monochromeIcon { image = awakeTemplateGlyph }
-        else { image = EyeGlyph.image(awake: true, color: accentChoice(model.accentIndex).ns) }
-        if animated, glyphIsAwake != nil {
-            let fade = CATransition()
-            fade.type = .fade
-            fade.duration = 0.25
-            fade.timingFunction = CAMediaTimingFunction(controlPoints: 0.2, 0.9, 0.3, 1)
-            button.layer?.add(fade, forKey: "glyphSwap")
-        }
-        button.image = image
-        glyphIsAwake = awake
+        attachCandle(to: button)
+        candle.color = awake && !model.monochromeIcon ? accentChoice(model.accentIndex).ns : nil
+        candle.awake = awake
+        candle.flicker = 0
+        button.setAccessibilityValue(awake ? "awake" : "off")
         updateFlicker(awake: awake)
     }
 
-    // MARK: - Candle flicker: while awake, the flame gently sways between a few pre-drawn frames.
+    // MARK: - Candle flicker: while awake, the flame gently sways (leans and stretches a little), redrawn in place.
     private var flickerTimer: Timer?
-    private var flickerFrames: [NSImage] = []
-    // A gentle sway played in order (not random picks, which jumped the flame between its
-    // tallest and shortest frames and read as the candle flipping up and down).
-    private static let flickerOffsets: [CGFloat] = [0, 0.18, 0.3, 0.18, 0, -0.18, -0.3, -0.18]
-    private var flickerIndex = 0
+    private var flickerClock = CACurrentMediaTime()
+    private var flickerWarp: Double = 0          // test hook: pretend the candle has been lit for hours
+    private static let flickerPeriod: Double = 4.4   // one slow sway left and right
+    private static let flickerLean: CGFloat = 0.3
 
     private func updateFlicker(awake: Bool) {
-        flickerTimer?.invalidate(); flickerTimer = nil
-        guard awake, !reduceMotion else { return }
-        let color: NSColor? = model.monochromeIcon ? nil : accentChoice(model.accentIndex).ns
-        flickerFrames = Self.flickerOffsets.map { EyeGlyph.image(awake: true, color: color, flicker: $0) }
-        let t = Timer(timeInterval: 0.55, repeats: true) { [weak self] _ in
+        flickerTimer?.invalidate(); flickerTimer = nil   // only ever one timer, however often this is called
+        candle.flicker = 0
+        guard awake, !reduceMotion, !screensAsleep else { return }
+        flickerClock = CACurrentMediaTime()
+        let t = Timer(timeInterval: 1.0 / 12.0, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.flickerStep() }
         }
+        t.tolerance = 0.02
         RunLoop.main.add(t, forMode: .common)
         flickerTimer = t
     }
 
+    /// The sway at `elapsed` seconds: a sine wave folded into one period first, so it stays exact however long the
+    /// candle has been lit (days, weeks).
+    static func flickerValue(elapsed: Double) -> CGFloat {
+        let p = elapsed.truncatingRemainder(dividingBy: flickerPeriod)
+        let v = flickerLean * CGFloat(sin(2 * Double.pi * p / flickerPeriod))
+        return v.isFinite ? v : 0
+    }
+
     private func flickerStep() {
-        guard let button = statusItem.button, !flickerFrames.isEmpty, isOn else { return }
-        flickerIndex = (flickerIndex + 1) % flickerFrames.count
-        let frame = flickerFrames[flickerIndex]
-        let fade = CATransition()
-        fade.type = .fade
-        fade.duration = 0.5
-        button.layer?.add(fade, forKey: "flicker")
-        button.image = frame
+        guard isOn else { updateFlicker(awake: false); return }
+        candle.flicker = Self.flickerValue(elapsed: CACurrentMediaTime() - flickerClock + flickerWarp)
+    }
+
+    /// Test hook ("iconstress"): days of sway in a few seconds plus repeated sleep/wake, then checks that nothing
+    /// drifted: the candle is still on the button, upright, the button picture never changed, no stray animations.
+    private func iconStress() {
+        guard let button = statusItem.button else { return }
+        var worst: CGFloat = 0, bad = 0
+        let base = 3.0 * 86400   // three days lit
+        for i in 0..<200_000 {
+            let v = Self.flickerValue(elapsed: base + Double(i) * 1.37)
+            if !v.isFinite || abs(v) > Self.flickerLean + 1e-6 { bad += 1 }
+            worst = max(worst, abs(v))
+            if i % 2000 == 0 { candle.flicker = v; candle.display() }
+        }
+        for _ in 0..<40 {
+            screensSlept(Notification(name: NSWorkspace.screensDidSleepNotification))
+            screensWoke(Notification(name: NSWorkspace.screensDidWakeNotification))
+        }
+        flickerWarp = base
+        let keys = button.layer?.animationKeys() ?? []
+        let lines = [
+            "frames=200000 bad=\(bad) worstLean=\(String(format: "%.4f", worst))",
+            "candleOnButton=\(candle.superview === button) candleFlipped=\(candle.isFlipped) frameMatches=\(candle.frame == button.bounds)",
+            "buttonImageUnchanged=\(button.image === iconPlaceholder) buttonLayerAnimations=\(keys)",
+            "timerRunning=\(flickerTimer?.isValid ?? false) isOn=\(isOn)"
+        ]
+        try? lines.joined(separator: "\n").write(toFile: "/tmp/awayke-iconstress.txt", atomically: true, encoding: .utf8)
+    }
+
+    // Screens asleep: stop redrawing. Back from sleep or after a display change: re-seat the candle and redraw.
+    private var screensAsleep = false
+    @objc private func screensSlept(_ n: Notification) { screensAsleep = true; flickerTimer?.invalidate(); flickerTimer = nil }
+    @objc private func screensWoke(_ n: Notification) {
+        screensAsleep = false
+        if let b = statusItem.button { attachCandle(to: b) }
+        updateFlicker(awake: isOn)
     }
 
     // Update text labels only (no pmset subprocess; safe to call on every slider tick).

@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Awayke is a fork of [Sleepless](https://github.com/Aboudjem/Sleepless) by Adam Boudjemaa.
 Versions 1.0.0 to 1.2.7 below are the original Sleepless releases and are kept for history.
 
+
+## [Unreleased]
+
+### Fixed
+- The menu bar candle no longer flips upside down after Awayke has been on for a long time (or after sleep or a
+  display change). The candle is now drawn by its own never-flipped view that redraws in place; the button's picture
+  is never swapped and no cross-fade runs on the button any more. The flame sways smoothly from a clock folded into
+  one sway period, it pauses while the screens sleep, and the candle is re-seated on wake and on display changes.
 ## [Unreleased]
 
 ## [1.4.0] - 2026-10-22
