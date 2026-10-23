@@ -11,7 +11,7 @@
 <meta property="og:title" content="Awayke">
 <meta property="og:description" content="Keep your MacBook awake with the lid closed. One click in the menu bar. Free for Mac.">
 <meta property="og:type" content="website">
-<meta property="og:image" content="showcase/aw-1-light.png">
+<meta property="og:image" content="showcase/aw-og.png">
 <link rel="icon" type="image/png" href="img/icon.png">
 <link rel="apple-touch-icon" href="img/icon.png">
 <style>
@@ -192,6 +192,8 @@
     *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
     .js .reveal { opacity: 1; transform: none; }
   }
+  /* showcase pictures fade softly into the page (edges are feathered in the image itself) */
+  img[src*="showcase/"] { border-radius: 0 !important; box-shadow: none !important; }
 </style>
 </head>
 <body>
