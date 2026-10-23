@@ -40,7 +40,7 @@ function Test-NoZoom([string]$Exe, [string]$Name, [string]$Shots, [string[]]$App
   Save-Crop (Join-Path $Shots "$Name-zoom-after-out.png") $b[0] $b[1] $b[2] $b[3]
   Write-Host "$Name zoom: before=$($z0 | ConvertTo-Json -Compress) afterIn=$($z1 | ConvertTo-Json -Compress) afterOut=$($z2 | ConvertTo-Json -Compress)"
   $same = { param($a, $c) ($a | ConvertTo-Json -Compress) -eq ($c | ConvertTo-Json -Compress) }
-  Check (& $same $z0 $z1) "$Name: Ctrl+wheel and Ctrl+plus change nothing (zoom, layout, size)"
-  Check (& $same $z0 $z2) "$Name: Ctrl+wheel and Ctrl+minus change nothing (zoom, layout, size)"
+  Check (& $same $z0 $z1) "${Name}: Ctrl+wheel and Ctrl+plus change nothing (zoom, layout, size)"
+  Check (& $same $z0 $z2) "${Name}: Ctrl+wheel and Ctrl+minus change nothing (zoom, layout, size)"
   Check (Quit-App $Exe $Name) "$Name zoom test: clean quit"
 }
