@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Awayke</title>
+<link rel="stylesheet" href="kit.css">
+<style>
+  :root[data-theme="light"] {
+    --bg: #F3F3F3; --card: #FFFFFF; --stroke: rgba(0,0,0,.07); --text: #1C1C1E; --dim: rgba(60,60,67,.62);
+    --track-off: rgba(0,0,0,.12); --warn: #C2410C;
+  }
+  :root[data-theme="dark"] {
+    --bg: #242426; --card: rgba(255,255,255,.055); --stroke: rgba(255,255,255,.08); --text: #F2F2F4; --dim: rgba(235,235,245,.6);
+    --track-off: rgba(255,255,255,.16); --warn: #FF9F6B;
+  }
+  body { background: var(--bg); transition: background .35s; }
+  .hero { display: flex; align-items: center; gap: 14px; padding: 14px; }
+  .candle {
+    width: 54px; height: 54px; border-radius: 14px; flex: none; display: grid; place-items: center;
+    background: color-mix(in srgb, var(--text) 7%, transparent);
+    transition: background .4s;
+  }
+  .on .candle { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+  .candle svg { width: 30px; height: 30px; overflow: visible; }
+  .candle .body, .candle .wick { fill: var(--dim); stroke: var(--dim); transition: fill .4s, stroke .4s; }
+  .on .candle .body, .on .candle .wick { fill: var(--text); stroke: var(--text); }
+  .candle .flame { fill: var(--accent); transform-origin: 15px 13px; transform: scale(0); opacity: 0;
+    transition: transform .45s var(--spring), opacity .25s; }
+  .on .candle .flame { transform: scale(1); opacity: 1; animation: flicker 2.6s ease-in-out infinite .5s; }
+  .candle .smoke { fill: none; stroke: var(--dim); stroke-width: 1.4; stroke-linecap: round; opacity: .9; transition: opacity .3s; }
+  .on .candle .smoke { opacity: 0; }
+  @keyframes flicker { 0%,100% { transform: scale(1) rotate(0); } 30% { transform: scale(1.04,.97) rotate(-3deg); } 60% { transform: scale(.97,1.04) rotate(2deg); } }
+  .hero h1 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.01em; position: relative; height: 25px; }
+  .hero h1 span { position: absolute; left: 0; top: 0; white-space: nowrap; transition: opacity .3s, transform .35s var(--spring); }
+  .hero h1 .t-on { opacity: 0; transform: translateY(6px); }
+  .on .hero h1 .t-on { opacity: 1; transform: none; }
+  .on .hero h1 .t-off { opacity: 0; transform: translateY(-6px); }
+  .hero p { margin: 2px 0 0; color: var(--dim); font-size: 12px; }
+  .battery-head { display: flex; align-items: baseline; gap: 6px; }
+  .battery-now { position: relative; height: 16px; font-size: 11px; color: var(--dim); font-weight: 600; }
+  .battery-now span { position: absolute; transform: translateX(-50%); white-space: nowrap; transition: left .4s var(--ease); }
+  .battery-wrap { position: relative; }
+  .battery-tick { position: absolute; top: 8px; width: 2px; height: 6px; border-radius: 1px; background: var(--dim); transform: translateX(-1px); pointer-events: none; }
+  .link-row { cursor: pointer; }
+  .link-row:hover .title { color: var(--accent); }
+  .chev { color: var(--dim); font-size: 16px; }
+  .foot { display: flex; justify-content: flex-end; padding: 0 2px; }
+  .back { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 15px; padding: 2px 2px 0; }
+  .back button { font-size: 13px; color: var(--accent); font-weight: 500; }
+  .section { font-size: 11.5px; font-weight: 600; color: var(--dim); margin: 4px 4px -4px; }
+  .swatches { display: flex; gap: 8px; }
+  .swatch { width: 22px; height: 22px; border-radius: 50%; background: var(--c); box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); transition: transform .2s var(--spring); }
+  .swatch.on { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--c); }
+  .swatch:hover { transform: scale(1.1); }
+  .about { font-size: 12px; color: var(--dim); }
+  .notice { font-size: 11.5px; color: var(--warn); padding: 0 4px; }
+</style>
+</head>
+<body>
+<div id="root">
+  <!-- main panel -->
+  <div class="view" id="main">
+    <div class="card hero" id="hero">
+      <div class="candle" aria-hidden="true">
+        <svg viewBox="0 0 30 30">
+          <rect class="body" x="9.5" y="17" width="11" height="12" rx="2.2"/>
+          <line class="wick" x1="15" y1="17" x2="15" y2="13.5" stroke-width="1.4" stroke-linecap="round"/>
+          <path class="flame" d="M15 1.5 C 20.5 6.5 19.5 13 15 13 C 10.5 13 9.5 6.5 15 1.5 Z M15 8.2 a1.6 2.2 0 1 0 0.01 0 Z" fill-rule="evenodd"/>
+          <path class="smoke" d="M15 12 C 18 10.5 12 8.5 15.4 5.5"/>
+        </svg>
+      </div>
+      <div class="grow">
+        <h1><span class="t-off">Sleeps normally</span><span class="t-on">Awake</span></h1>
+        <p id="status">Sleeps when you close the lid</p>
+      </div>
+    </div>
+    <div class="notice" id="notice" hidden></div>
+    <div class="card">
+      <div class="row">
+        <div class="grow"><div class="title">Keep awake</div><div class="detail" id="awakeDetail">Your PC won't go to sleep</div></div>
+        <span id="swAwake"></span>
+      </div>
+      <div class="row">
+        <div class="grow"><div class="title">Keep running with the lid closed</div><div class="detail" id="lidDetail">Closing the lid won't put it to sleep</div></div>
+        <span id="swLid"></span>
+      </div>
+      <div class="sub">
+        <div class="row" style="padding:0 0 8px;min-height:0;border:0"><div class="grow title">Auto-off timer</div><span class="detail" id="remaining"></span></div>
+        <div id="timerChips"></div>
+      </div>
+      <div class="sub" id="batteryRow">
+        <div class="battery-head"><span class="title">Turn off at low battery</span><span class="value" id="floorValue"></span></div>
+        <div class="battery-wrap"><input type="range" id="floor" min="0" max="100" step="1" aria-label="Turn off at low battery"><div class="battery-tick" id="batteryTick"></div></div>
+        <div class="battery-now"><span id="batteryNow"></span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row">
+        <div class="grow title">Open at login</div>
+        <span id="swLogin"></span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row link-row" id="openSettings" role="button" tabindex="0">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></div>
+        <div class="grow title">Settings</div><span class="chev">&rsaquo;</span>
+      </div>
+    </div>
+    <div class="foot"><button class="btn plain" id="quit">Quit</button></div>
+  </div>
+
+  <!-- settings -->
+  <div class="view" id="settings" hidden>
+    <div class="back"><button id="backBtn">&lsaquo; Back</button><span style="margin-left:auto;margin-right:auto;transform:translateX(-24px)">Settings</span></div>
+    <div class="section">General</div>
+    <div class="card">
+      <div class="row"><div class="grow"><div class="title">Open at login</div><div class="detail">Start Awayke when you sign in. It always starts switched off.</div></div><span id="swLogin2"></span></div>
+      <div class="sub"><div class="title" style="margin-bottom:6px">Single click on the tray icon</div><div id="clickSeg"></div><div class="detail" id="clickDetail" style="margin-top:6px"></div></div>
+    </div>
+    <div class="section">Awake</div>
+    <div class="card">
+      <div class="sub"><div class="title" style="margin-bottom:6px">What stays awake</div><div id="displaySeg"></div><div class="detail" id="displayDetail" style="margin-top:6px"></div></div>
+      <div class="sub">
+        <div class="title">Timer buttons in the panel</div>
+        <div class="detail" style="margin-bottom:8px" id="choicesDetail"></div>
+        <div class="chips" id="choiceList"></div>
+        <div style="margin-top:12px" id="newTimer"></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:6px"><button class="btn solid" id="addTimer">Add</button></div>
+      </div>
+      <div class="sub"><div class="title" style="margin-bottom:6px">Default auto-off timer</div><div id="defaultChips"></div><div class="detail" style="margin-top:6px">Used each time Awayke starts. You can still change it in the panel.</div></div>
+    </div>
+    <div class="section">Appearance</div>
+    <div class="card">
+      <div class="sub"><div class="title" style="margin-bottom:8px">Accent colour</div><div class="swatches" id="swatches"></div></div>
+      <div class="sub"><div class="title" style="margin-bottom:6px">Tray icon when awake</div><div id="monoSeg"></div></div>
+    </div>
+    <div class="card"><div class="sub about" id="about"></div></div>
+  </div>
+</div>
+<script src="kit.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  let S = window.__BOOT__ || {};
+  let newTimerValue = 45;
+
+  const swAwake = kit.sw(S.on, 'Keep awake', v => kit.post('toggle', { on: v }));
+  const swLid = kit.sw(S.lidMode, 'Keep running with the lid closed', v => kit.post('lid', { on: v }));
+  const swLogin = kit.sw(S.login, 'Open at login', v => { swLogin2.force(v); kit.post('login', { on: v }); });
+  const swLogin2 = kit.sw(S.login, 'Open at login', v => { swLogin.force(v); kit.post('login', { on: v }); });
+  $('swAwake').replaceWith(swAwake); $('swLid').replaceWith(swLid); $('swLogin').replaceWith(swLogin); $('swLogin2').replaceWith(swLogin2);
+
+  const clickSeg = kit.chips([{ label: 'Open the panel', value: 'panel' }, { label: 'Switch awake', value: 'toggle' }],
+    S.clickToggles ? 'toggle' : 'panel', v => kit.post('clickToggles', { on: v === 'toggle' }), true);
+  $('clickSeg').append(clickSeg);
+  const displaySeg = kit.chips([{ label: 'PC only', value: 'pc' }, { label: 'PC and screen', value: 'screen' }],
+    S.display ? 'screen' : 'pc', v => kit.post('display', { on: v === 'screen' }), true);
+  $('displaySeg').append(displaySeg);
+  const monoSeg = kit.chips([{ label: 'Accent colour', value: 'accent' }, { label: 'Monochrome', value: 'mono' }],
+    S.mono ? 'mono' : 'accent', v => kit.post('mono', { on: v === 'mono' }), true);
+  $('monoSeg').append(monoSeg);
+
+  $('newTimer').append(kit.chipDrum({ title: 'New timer', mode: 'duration', value: newTimerValue, min: 5, max: 1440,
+    presets: [15, 45, 90, 180], onChange: v => { newTimerValue = v; } }));
+  $('addTimer').onclick = () => kit.post('addTimer', { minutes: newTimerValue });
+
+  const floor = $('floor');
+  const clampFloor = () => { const v = Math.max(5, Math.min(50, +floor.value)); if (+floor.value !== v) floor.value = v; return v; };
+  floor.oninput = () => paintFloor(clampFloor());
+  floor.onchange = () => kit.post('floor', { percent: clampFloor() });
+  function paintFloor(v) {
+    $('floorValue').textContent = v + '%';
+    floor.style.setProperty('--fill', v + '%');
+  }
+
+  $('openSettings').onclick = () => show('settings');
+  $('openSettings').onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') show('settings'); };
+  $('backBtn').onclick = () => show('main');
+  $('quit').onclick = () => kit.post('quit');
+  function show(name) {
+    ['main', 'settings'].forEach(v => { const n = $(v); n.hidden = v !== name; n.classList.toggle('slide', v === name); });
+  }
+  window.onPanelClosed = () => show('main');
+
+  // Timer chips are rebuilt only when the list of choices changes (so a click animates normally).
+  let chipKey = '', timerChips = null, defaultKey = '', defaultChips = null;
+  function choiceOptions() { return [{ label: 'Off', value: 0 }, ...S.choices.map(m => ({ label: kit.duration(m), value: m }))]; }
+
+  function render() {
+    kit.setDark(S.dark);
+    document.documentElement.style.setProperty('--accent', S.accentColor);
+    $('root').classList.toggle('on', !!S.on);
+    $('main').classList.toggle('on', !!S.on);
+    swAwake.follow(S.on); swLid.follow(S.lidMode); swLogin.follow(S.login); swLogin2.follow(S.login);
+    clickSeg.select(S.clickToggles ? 'toggle' : 'panel');
+    $('clickDetail').textContent = S.clickToggles ? 'Click switches awake on or off. Right-click for the menu.' : 'Click opens this panel. Right-click for the menu.';
+    displaySeg.select(S.display ? 'screen' : 'pc');
+    $('displayDetail').textContent = S.display ? 'The screen stays on too while Awayke is on.' : 'Only the PC stays awake. The screen can still turn off to save power.';
+    monoSeg.select(S.mono ? 'mono' : 'accent');
+    $('lidDetail').textContent = S.lidError || 'Closing the lid won’t put it to sleep';
+    $('lidDetail').classList.toggle('warn', !!S.lidError);
+    $('awakeDetail').textContent = S.display ? 'Your PC and screen stay on' : 'Your PC stays on, the screen may turn off';
+    const n = $('notice'); n.hidden = !S.notice; n.textContent = S.notice || '';
+
+    const key = S.choices.join(',');
+    if (key !== chipKey) {
+      chipKey = key;
+      timerChips = kit.chips(choiceOptions(), S.timer, v => kit.post('timer', { minutes: v }), true);
+      $('timerChips').replaceChildren(timerChips);
+      const list = $('choiceList'); list.replaceChildren();
+      S.choices.forEach(m => {
+        const c = kit.el('button', 'chip');
+        c.append(kit.duration(m), Object.assign(kit.el('span', 'x', '×'), {}));
+        c.setAttribute('aria-label', 'Remove ' + kit.duration(m));
+        c.onclick = () => kit.post('removeTimer', { minutes: m });
+        list.append(c);
+      });
+      if (!S.choices.length) list.append(kit.el('span', 'detail', 'Only Off for now'));
+    }
+    timerChips.select(S.timer);
+    $('choicesDetail').textContent = `Off is always there. Add up to ${S.maxChoices} of your own, from 5 minutes to 24 hours.`;
+    $('addTimer').disabled = S.choices.length >= S.maxChoices;
+    $('addTimer').style.opacity = S.choices.length >= S.maxChoices ? .4 : 1;
+    const dkey = key;
+    if (dkey !== defaultKey) {
+      defaultKey = dkey;
+      defaultChips = kit.chips(choiceOptions(), S.defaultTimer, v => kit.post('defaultTimer', { minutes: v }));
+      $('defaultChips').replaceChildren(defaultChips);
+    }
+    defaultChips.select(S.defaultTimer);
+
+    const sw = $('swatches');
+    if (!sw.childElementCount) Object.keys(S.accents).forEach(name => {
+      const b = kit.el('button', 'swatch'); b.dataset.name = name; b.title = name; b.setAttribute('aria-label', name + ' accent');
+      b.onclick = () => kit.post('accent', { name });
+      sw.append(b);
+    });
+    sw.querySelectorAll('.swatch').forEach(b => { b.style.setProperty('--c', S.accents[b.dataset.name]); b.classList.toggle('on', b.dataset.name === S.accent); });
+
+    const bat = S.battery;
+    $('batteryRow').hidden = !bat.present;
+    if (document.activeElement !== floor) { floor.value = S.floor; paintFloor(S.floor); }
+    const pos = Math.max(0, Math.min(100, bat.percent));
+    $('batteryTick').style.left = pos + '%';
+    $('batteryNow').style.left = pos + '%';
+    $('batteryNow').style.transform = `translateX(-${pos}%)`;
+    $('batteryNow').textContent = bat.percent + '% now' + (bat.onBattery ? '' : ', charging');
+    $('about').innerHTML = '';
+    $('about').append(kit.el('div', 'title', 'Awayke ' + S.version + ' for Windows'),
+      kit.el('div', null, 'Keeps your PC running, even with the lid closed. Normal sleep comes back when you switch it off, quit, restart, or if the app ever crashes.'));
+    tickText();
+  }
+
+  function tickText() {
+    let status;
+    if (!S.on) status = S.lidMode ? 'Sleeps when you close the lid' : 'Sleeps as usual';
+    else {
+      const mins = Math.floor((Date.now() - (S.since || Date.now())) / 60000);
+      const h = Math.floor(mins / 60), m = mins % 60;
+      status = mins < 1 ? 'Awake for under a minute' : (h > 0 ? `Awake for ${h}h ${m}m` : `Awake for ${m} min`);
+    }
+    $('status').textContent = status;
+    if (S.on && S.offAt) {
+      const left = Math.max(0, Math.ceil((S.offAt - Date.now()) / 60000));
+      $('remaining').textContent = 'Auto-off in ' + kit.duration(Math.max(1, left));
+    } else $('remaining').textContent = '';
+  }
+  setInterval(tickText, 15000);
+
+  window.app = { update(state) { S = state; render(); } };
+  render();
+})();
+</script>
+</body>
+</html>

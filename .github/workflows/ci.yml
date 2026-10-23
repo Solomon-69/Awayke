@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build (swiftc, macOS 26)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          sw_vers
+          swiftc --version
+          echo "SDK: $(xcrun --sdk macosx --show-sdk-version 2>/dev/null || echo n/a)"
+
+      - name: Compile all Swift sources (zero-warning gate)
+        run: |
+          set -euo pipefail
+          # Same files, frameworks and deployment target as build.sh (the app needs macOS 26).
+          swiftc -O -parse-as-library -target arm64-apple-macos26.0 \
+            -framework AppKit -framework ServiceManagement -framework SwiftUI -framework IOKit \
+            App.swift Glyph.swift PopoverView.swift SettingsView.swift SmoothSwitch.swift ChipDrumPicker.swift Intro.swift ShareFriend.swift \
+            -o /tmp/Awayke 2> build.log \
+            || { echo "::group::swiftc output"; cat build.log; echo "::endgroup::"; exit 1; }
+          cat build.log
+          if grep -q "warning:" build.log; then
+            echo "::error::swiftc emitted warnings, zero-warning gate failed"
+            exit 1
+          fi
+          file /tmp/Awayke
+
+      - name: Assemble app bundle
+        run: |
+          set -euo pipefail
+          ./build.sh "$PWD/dist"
+          ls -la "dist/Awayke.app/Contents" "dist/Awayke.app/Contents/MacOS"
+
+      - name: Upload app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Awayke-app
+          path: dist/Awayke.app
+          if-no-files-found: error

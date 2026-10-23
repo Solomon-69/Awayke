@@ -1,0 +1,194 @@
+name: Release
+
+# Cut a release from a tag. Building on a GitHub-hosted runner, signing the build
+# provenance with Sigstore (SLSA Build L2), and publishing the zip + checksums means
+# anyone can verify the download came from this exact source, with no Apple account
+# involved. See docs/AUDIT.md for how to verify as a user.
+#
+# Assets: Awayke.dmg (drag to Applications), Awayke-<version>.zip and SHA256SUMS.
+#
+# Optional Apple signing and notarisation
+# ---------------------------------------
+# Without these secrets the app is ad-hoc signed and people need the one-time
+# "Open Anyway" step. Add them under Settings > Secrets and variables > Actions to ship
+# a Developer ID signed, notarised build. If any is missing, those steps are skipped
+# and the release still goes out.
+#
+#   MACOS_CERT_P12           base64 of your "Developer ID Application" certificate (.p12)
+#   MACOS_CERT_PASSWORD      the password of that .p12
+#   MACOS_SIGN_IDENTITY      e.g. "Developer ID Application: Your Name (TEAMID)"
+#   NOTARY_APPLE_ID          the Apple Account email used for notarisation
+#   NOTARY_TEAM_ID           your 10-character Team ID
+#   NOTARY_PASSWORD          an app-specific password from account.apple.com
+#
+# Never commit any of these values to the repository.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to (re)build a release for, e.g. v1.1.0'
+        required: true
+
+permissions:
+  contents: write       # create the release + upload assets
+  id-token: write       # Sigstore OIDC, required by attest-build-provenance
+  attestations: write   # write the build-provenance attestation to this repo
+
+jobs:
+  release:
+    name: Build, attest, and publish
+    runs-on: macos-26
+    env:
+      HAS_SIGNING: ${{ secrets.MACOS_CERT_P12 != '' && secrets.MACOS_CERT_PASSWORD != '' && secrets.MACOS_SIGN_IDENTITY != '' }}
+      HAS_NOTARY: ${{ secrets.NOTARY_APPLE_ID != '' && secrets.NOTARY_TEAM_ID != '' && secrets.NOTARY_PASSWORD != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve tag and version
+        id: ver
+        run: |
+          set -euo pipefail
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          echo "tag=$TAG"            >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}"    >> "$GITHUB_OUTPUT"
+
+      - name: Toolchain
+        run: |
+          sw_vers
+          swiftc --version
+          echo "SDK: $(xcrun --sdk macosx --show-sdk-version 2>/dev/null || echo n/a)"
+
+      # Optional: only runs when the signing secrets exist (see the top of this file).
+      - name: Import the Developer ID certificate
+        if: env.HAS_SIGNING == 'true'
+        env:
+          CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          echo "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/cert.p12" -P "$CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" >/dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/cert.p12"
+
+      - name: Build Awayke.app
+        env:
+          SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+        run: |
+          set -euo pipefail
+          # Same deployment target as local builds (the app needs macOS 26).
+          ./build.sh "$PWD/dist"
+          if [ "$HAS_SIGNING" = "true" ]; then
+            # Developer ID signature with the hardened runtime and a secure timestamp,
+            # which Apple requires before it will notarise the app.
+            codesign --force --deep --options runtime --timestamp --sign "$SIGN_IDENTITY" "dist/Awayke.app"
+          else
+            echo "No signing secrets: keeping the ad-hoc signature."
+          fi
+          codesign --verify --strict --verbose=1 "dist/Awayke.app"
+
+      - name: Make Awayke.dmg
+        env:
+          SIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+        run: |
+          set -euo pipefail
+          STAGE="$RUNNER_TEMP/dmg"
+          rm -rf "$STAGE"; mkdir -p "$STAGE"
+          ditto "dist/Awayke.app" "$STAGE/Awayke.app"
+          ln -s /Applications "$STAGE/Applications"
+          hdiutil create -volname "Awayke" -srcfolder "$STAGE" -fs HFS+ -format UDZO -ov Awayke.dmg
+          if [ "$HAS_SIGNING" = "true" ]; then
+            codesign --force --timestamp --sign "$SIGN_IDENTITY" Awayke.dmg
+          fi
+
+      # Optional: only runs when both the signing and the notary secrets exist.
+      - name: Notarise and staple
+        if: env.HAS_SIGNING == 'true' && env.HAS_NOTARY == 'true'
+        env:
+          NOTARY_APPLE_ID: ${{ secrets.NOTARY_APPLE_ID }}
+          NOTARY_TEAM_ID: ${{ secrets.NOTARY_TEAM_ID }}
+          NOTARY_PASSWORD: ${{ secrets.NOTARY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          xcrun notarytool submit Awayke.dmg \
+            --apple-id "$NOTARY_APPLE_ID" --team-id "$NOTARY_TEAM_ID" --password "$NOTARY_PASSWORD" \
+            --wait --timeout 30m
+          xcrun stapler staple Awayke.dmg
+          xcrun stapler staple "dist/Awayke.app"
+          spctl --assess --type open --context context:primary-signature --verbose Awayke.dmg
+
+      - name: Zip the app bundle
+        id: zip
+        run: |
+          set -euo pipefail
+          ASSET="Awayke-${{ steps.ver.outputs.version }}.zip"
+          ditto -c -k --keepParent "dist/Awayke.app" "$ASSET"
+          echo "asset=$ASSET" >> "$GITHUB_OUTPUT"
+          ls -la "$ASSET"
+
+      - name: SHA-256 checksums
+        run: |
+          set -euo pipefail
+          shasum -a 256 Awayke.dmg "${{ steps.zip.outputs.asset }}" | tee SHA256SUMS
+
+      - name: Attest build provenance (SLSA)
+        # GitHub only stores attestations for public repositories.
+        if: ${{ !github.event.repository.private }}
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: |
+            Awayke.dmg
+            ${{ steps.zip.outputs.asset }}
+
+      - name: Extract release notes from CHANGELOG
+        run: |
+          set -euo pipefail
+          VER="${{ steps.ver.outputs.version }}"
+          awk -v v="$VER" '
+            $0 ~ "^## \\[" v "\\]" {flag=1; next}
+            /^## \[/ && flag {exit}
+            flag {print}
+          ' CHANGELOG.md > NOTES.md
+          # Say how this build was signed, then append the verification footer.
+          {
+            echo ""
+            if [ "$HAS_SIGNING" = "true" ] && [ "$HAS_NOTARY" = "true" ]; then
+              echo "This build is signed with a Developer ID and notarised by Apple."
+            else
+              echo "This build is not notarised. The first time, right-click Awayke in Applications and choose **Open**, or use **Open Anyway** in System Settings > Privacy & Security."
+            fi
+            echo ""
+            echo "---"
+            echo "### Verify this download"
+            echo '```sh'
+            echo "shasum -a 256 -c SHA256SUMS"
+            echo "gh attestation verify ${{ steps.zip.outputs.asset }} -R ${{ github.repository }}"
+            echo '```'
+            echo "See [docs/AUDIT.md](https://github.com/${{ github.repository }}/blob/main/docs/AUDIT.md) for what each check proves."
+          } >> NOTES.md
+          echo "----- NOTES.md -----"; cat NOTES.md
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.ver.outputs.tag }}"
+          ASSET="${{ steps.zip.outputs.asset }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" Awayke.dmg "$ASSET" SHA256SUMS --clobber
+            gh release edit "$TAG" --notes-file NOTES.md --title "Awayke ${{ steps.ver.outputs.version }}"
+          else
+            gh release create "$TAG" Awayke.dmg "$ASSET" SHA256SUMS \
+              --title "Awayke ${{ steps.ver.outputs.version }}" \
+              --notes-file NOTES.md
+          fi
