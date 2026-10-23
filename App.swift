@@ -346,6 +346,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if cmd.hasPrefix("intro") {   // intro or intro:<page 0-2>
             showIntro(page: Int(cmd.split(separator: ":").last ?? "") ?? 0); return
         }
+        if cmd == "sharetest" { ShareFriend.selfTest(report: "/tmp/awayke-share-test.txt"); return }
         if cmd == "closeintro" { introWindow?.close(); introWindow = nil; return }
         switch note.object as? String {
         case "popover": if !popover.isShown { openPopover(activate: false) }
@@ -627,7 +628,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         updateCountdownLabel()
         model.openCount += 1   // entrance spring in the SwiftUI content
         // Close when the user clicks anywhere outside the app (status bar, another app, desktop).
+        MenuBarStrip.startEsc(window: { [weak self] in self?.popover.contentViewController?.view.window }, close: { [weak self] in self?.closePopover() })
         clickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            if MenuBarStrip.contains() { return }   // clicks on other menu bar icons keep the panel open
             self?.closePopover()
         }
     }
@@ -636,6 +639,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         popover.performClose(nil)
         countdownTicker?.invalidate(); countdownTicker = nil   // stop the 1 Hz label refresh (keep-awake timer keeps running)
         if let monitor = clickMonitor { NSEvent.removeMonitor(monitor); clickMonitor = nil }
+        MenuBarStrip.stopEsc()
     }
 
     // Core keep-awake toggle, decoupled from the UI sender. Returns true ONLY when the user
