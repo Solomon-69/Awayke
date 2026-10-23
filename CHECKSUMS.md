@@ -1,16 +1,16 @@
 # Download checksums (SHA-256)
 
-Fingerprints of the current release downloads. If a file you downloaded gives a different fingerprint, do not open it.
+Fingerprints of the current release downloads (Awayke 1.5). If a file you downloaded gives a different fingerprint, do not open it.
 
 ```
-3a4d2d538ed71ae196c7d8b75a498c84e9ff846ed6be1c678e4367530d33b7a9  Awayke-1.4.0.zip
-eb209e71a33540924c6f958eaaa191c642a8f4bdb5e29808b7a81fdc158082e2  Awayke.dmg
+f5173f28a65f488cc4af0033ccd8f25b5252632dc47c74f007ebb8102cee96ba  Awayke.dmg
+a8f272eca96d9fc570c0909db5857a678db1617db98e4f5a6fc9e794da102acd  Awayke-mac.zip
+6419e63fe10166247f71f0a0e254e57903bae44e52ca1db08ad7fe0b108ebd05  Awayke-1.5.zip
+1a7634cc933b65303bc65e819b8d505b13b7910a9b157ab768449fe1447ef50a  Awayke-windows.zip
 ```
 
 Check on Mac: `shasum -a 256 <file>`. Check on Windows: `certutil -hashfile <file> SHA256`.
 
-Release: v1.4.0 (Awayke.dmg, Awayke-1.4.0.zip). Another SHA256SUMS file is attached to the release itself.
-
-Version 1.4.1 is the current version. Its downloads have not been published yet, so the fingerprints above belong to the last published build (1.4.0). New fingerprints are added here when 1.4.1 is released.
+Release: [v1.5](https://github.com/Solomon-69/Awayke/releases/tag/v1.5) (Awayke.dmg, Awayke-mac.zip, Awayke-1.5.zip, Awayke-windows.zip). A SHA256SUMS file is attached to the release too.
 
 The apps are not signed yet; see the "Unsigned apps" section of the README.

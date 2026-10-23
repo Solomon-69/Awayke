@@ -378,7 +378,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if let b = statusItem.button, let w = b.window {
                 let r = w.convertToScreen(b.convert(b.bounds, to: nil))
                 let txt = "\(Int(r.minX)) \(Int(r.minY)) \(Int(r.width)) \(Int(r.height)) \(Int(NSScreen.main?.frame.height ?? 0))"
+                #if DEBUG
                 try? txt.write(toFile: "/tmp/sleepless-statusitem.txt", atomically: true, encoding: .utf8)
+                #endif
             }
         default: break
         }

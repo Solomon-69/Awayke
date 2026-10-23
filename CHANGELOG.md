@@ -9,6 +9,8 @@ Awayke is a fork of [Sleepless](https://github.com/Aboudjem/Sleepless) by Adam B
 Versions 1.0.0 to 1.2.7 below are the original Sleepless releases and are kept for history.
 
 
+## [Unreleased]
+
 ## [1.5] - 2026-10-23
 
 ### Changed
@@ -20,13 +22,6 @@ Versions 1.0.0 to 1.2.7 below are the original Sleepless releases and are kept f
   display change). The candle is now drawn by its own never-flipped view that redraws in place; the button's picture
   is never swapped and no cross-fade runs on the button any more. The flame sways smoothly from a clock folded into
   one sway period, it pauses while the screens sleep, and the candle is re-seated on wake and on display changes.
-## [Unreleased]
-
-## [1.5] - 2026-10-23
-
-### Changed
-- New welcome window: frosted glass panel on a plain soft backdrop, logo centred and never cut off, three short tips on the last page.
-- First-launch animation like the iPhone unlock: the icon and rows rise in with a staggered spring. It plays once per page and never replays (fades only when Reduce Motion is on).
 
 ## [1.4.0] - 2026-10-22
 
@@ -210,7 +205,8 @@ Versions 1.0.0 to 1.2.7 below are the original Sleepless releases and are kept f
 - README in 6 languages (English, 简体中文, Español, 日本語, Français, Deutsch).
 - MIT license, security model (`SECURITY.md`), and community-health files.
 
-[Unreleased]: https://github.com/Solomon-69/Awayke/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/Solomon-69/Awayke/compare/v1.5...HEAD
+[1.5]: https://github.com/Solomon-69/Awayke/releases/tag/v1.5
 [1.4.0]: https://github.com/Solomon-69/Awayke/releases/tag/v1.4.0
 [1.2.5]: https://github.com/Aboudjem/Sleepless/compare/v1.2.4...v1.2.5
 [1.2.4]: https://github.com/Aboudjem/Sleepless/compare/v1.2.3...v1.2.4
