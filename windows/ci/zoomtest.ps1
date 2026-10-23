@@ -12,6 +12,11 @@ public static class ZIn {
     for (int i = 0; i < times; i++) { mouse_event(0x0800, 0, 0, delta, UIntPtr.Zero); System.Threading.Thread.Sleep(60); }
     keybd_event(0x11, 0, 2, UIntPtr.Zero);
   }
+  public static void CtrlKeys(params byte[] keys) {
+    keybd_event(0x11, 0, 0, UIntPtr.Zero);
+    foreach (var k in keys) { keybd_event(k, 0, 0, UIntPtr.Zero); keybd_event(k, 0, 2, UIntPtr.Zero); System.Threading.Thread.Sleep(80); }
+    keybd_event(0x11, 0, 2, UIntPtr.Zero);
+  }
 }
 "@
 function Test-NoZoom([string]$Exe, [string]$Name, [string]$Shots, [string[]]$AppArgs = @()) {
@@ -26,14 +31,14 @@ function Test-NoZoom([string]$Exe, [string]$Name, [string]$Shots, [string[]]$App
   Start-Sleep -Milliseconds 400
   # Phase 1: zoom in
   [ZIn]::CtrlWheel(120, 8)
-  [System.Windows.Forms.SendKeys]::SendWait('^{ADD}^{ADD}^=^{ADD}')
+  [ZIn]::CtrlKeys(0x6B, 0x6B, 0xBB, 0x6B)   # Ctrl + numpad-plus, plus
   New-Item "$j.go1" -ItemType File | Out-Null
   Check (Wait-File "$j.z1" 60) "$Name zoom test: report after zoom-in attempts"
   $z1 = Get-Content "$j.z1" -Raw | ConvertFrom-Json
   Save-Crop (Join-Path $Shots "$Name-zoom-after-in.png") $b[0] $b[1] $b[2] $b[3]
   # Phase 2: zoom out
   [ZIn]::CtrlWheel(-120, 8)
-  [System.Windows.Forms.SendKeys]::SendWait('^{SUBTRACT}^{SUBTRACT}^-^{SUBTRACT}')
+  [ZIn]::CtrlKeys(0x6D, 0x6D, 0xBD, 0x6D)   # Ctrl + numpad-minus, minus
   New-Item "$j.go2" -ItemType File | Out-Null
   Check (Wait-File "$j.z2" 60) "$Name zoom test: report after zoom-out attempts"
   $z2 = Get-Content "$j.z2" -Raw | ConvertFrom-Json
