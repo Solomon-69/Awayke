@@ -227,7 +227,7 @@ struct DrumWheel: View {
                     guard rowsFromCenter != 0 else { return }
                     settle(projected: current.rounded() + Double(rowsFromCenter))
                 }))
-            .onChange(of: selection) { newValue in
+            .onChange(of: selection) { _, newValue in
                 // Changed from outside (a chip, or a clamp): roll to it the short way round.
                 guard index(of: current) != newValue else { return }
                 var delta = Double(newValue) - Double(index(of: current))
