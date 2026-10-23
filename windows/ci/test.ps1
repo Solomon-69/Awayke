@@ -58,4 +58,9 @@ Save-TrayCorner (Join-Path $Shots '06-awayke-tray-off-dark.png')
 Check (-not $r2.on) 'starts switched off'
 Check (Quit-App $Exe 'Awayke') 'second run: clean quit'
 Set-Theme $false
+
+# ---- No zooming: Ctrl+wheel (= trackpad pinch), Ctrl and plus/minus/0 must do nothing ----
+. "$PSScriptRoot/zoomtest.ps1"
+Test-NoZoom $Exe 'Awayke' $Shots
+Set-Theme $false
 Finish

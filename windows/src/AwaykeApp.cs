@@ -288,6 +288,7 @@ internal sealed class AwaykeApp : ApplicationContext
             panel.ShowPanel(tray.Center());
         }
         if (args.Has("--test-settings")) panel.Run("document.getElementById('openSettings').click()");
+        if (args.Has("--test-zoomprobe") && args.SelfTestPath != null) { await panel.ZoomProbe(args.SelfTestPath); return; }
         if (args.SelfTestPath != null)
         {
             await Task.Delay(2500);
