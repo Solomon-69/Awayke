@@ -2,6 +2,7 @@
 // what Awayke does, the one-time permission (with Apple's own Touch ID / password sheet behind
 // the button), and how to use it. Skippable. Springs throughout; Reduce Motion gets fades.
 import AppKit
+import Combine
 import SwiftUI
 
 enum IntroPref { static let done = "introDone" }
