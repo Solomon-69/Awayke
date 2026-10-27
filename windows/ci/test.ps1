@@ -57,10 +57,18 @@ Save-Crop (Join-Path $Shots '05-awayke-settings-dark.png') $b[0] $b[1] $b[2] $b[
 Save-TrayCorner (Join-Path $Shots '06-awayke-tray-off-dark.png')
 Check (-not $r2.on) 'starts switched off'
 Check (Quit-App $Exe 'Awayke') 'second run: clean quit'
-Set-Theme $false
 
-# ---- No zooming: Ctrl+wheel (= trackpad pinch), Ctrl and plus/minus/0 must do nothing ----
-. "$PSScriptRoot/zoomtest.ps1"
-Test-NoZoom $Exe 'Awayke' $Shots
+# ---- Run 3: dark theme, switch on, panel open (for the page pictures) ----
+Set-Theme $true
+$json3 = Join-Path $Shots 'awayke-selftest-dark-on.json'
+$p3 = Start-App $Exe @('--test-open', '--test-on', "--selftest=$json3")
+[void](Promote-TrayIcon 'Awayke.exe' 10)
+Check (Wait-File $json3 120) 'third run: self-test file written'
+$r3 = Get-Content $json3 -Raw | ConvertFrom-Json
+Start-Sleep -Seconds 1
+$b = $r3.panelBounds
+Save-Crop (Join-Path $Shots '07-awayke-panel-dark.png') $b[0] $b[1] $b[2] $b[3]
+Save-TrayCorner (Join-Path $Shots '08-awayke-tray-on-dark.png')
+Check (Quit-App $Exe 'Awayke') 'third run: clean quit'
 Set-Theme $false
 Finish

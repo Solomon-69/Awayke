@@ -10,7 +10,7 @@ namespace Awayke;
 /// </summary>
 internal sealed class AwaykeApp : ApplicationContext
 {
-    public const string Version = "1.5.0";
+    public const string Version = "1.4.0";
     private const int TickMs = 10_000;
 
     private static readonly Color LightBack = Color.FromArgb(0xF3, 0xF3, 0xF3);
@@ -288,7 +288,6 @@ internal sealed class AwaykeApp : ApplicationContext
             panel.ShowPanel(tray.Center());
         }
         if (args.Has("--test-settings")) panel.Run("document.getElementById('openSettings').click()");
-        if (args.Has("--test-zoomprobe") && args.SelfTestPath != null) { await panel.ZoomProbe(args.SelfTestPath); return; }
         if (args.SelfTestPath != null)
         {
             await Task.Delay(2500);

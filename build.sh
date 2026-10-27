@@ -57,10 +57,10 @@ fi
 [ -f "$ICNS" ] || { echo "error: missing $ICNS (run ./build.sh --regen-icon)" >&2; exit 1; }
 
 # 2. Compile the executable.
-echo "==> Compiling App.swift, Glyph.swift, PopoverView.swift, SettingsView.swift, SmoothSwitch.swift, ChipDrumPicker.swift, Intro.swift, ShareFriend.swift"
+echo "==> Compiling App.swift, Glyph.swift, PopoverView.swift, SettingsView.swift, SmoothSwitch.swift, ChipDrumPicker.swift, Intro.swift"
 BIN_TMP="$(mktemp -d)"
 swiftc -O -parse-as-library -target "$TARGET" -framework AppKit -framework ServiceManagement -framework SwiftUI -framework IOKit \
-  "$REPO/App.swift" "$REPO/Glyph.swift" "$REPO/PopoverView.swift" "$REPO/SettingsView.swift" "$REPO/SmoothSwitch.swift" "$REPO/ChipDrumPicker.swift" "$REPO/Intro.swift" "$REPO/ShareFriend.swift" -o "$BIN_TMP/$EXEC_NAME"
+  "$REPO/App.swift" "$REPO/Glyph.swift" "$REPO/PopoverView.swift" "$REPO/SettingsView.swift" "$REPO/SmoothSwitch.swift" "$REPO/ChipDrumPicker.swift" "$REPO/Intro.swift" -o "$BIN_TMP/$EXEC_NAME"
 
 # 3. Assemble the bundle: Contents/{Info.plist, MacOS/<exe>, Resources/<name>.icns}
 echo "==> Assembling bundle"

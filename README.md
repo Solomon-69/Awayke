@@ -7,7 +7,7 @@
 <p><b>Keep your MacBook awake with the lid closed. One click in the menu bar.</b></p>
 
 <p>
-  <a href="https://github.com/Solomon-69/Awayke/releases/latest"><img alt="Version 1.5" src="https://img.shields.io/badge/version-1.5-E07B00?style=flat-square"></a>
+  <a href="https://github.com/Solomon-69/Awayke/releases/latest"><img alt="Version 1.4.2" src="https://img.shields.io/badge/version-1.4.2-E07B00?style=flat-square"></a>
   <img alt="macOS 26 or later, Apple silicon" src="https://img.shields.io/badge/macOS-26%2B-1f1d1a?style=flat-square&logo=apple&logoColor=white">
   <a href="LICENSE"><img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-5b8a5a?style=flat-square"></a>
   <img alt="No telemetry" src="https://img.shields.io/badge/telemetry-none-5b8a5a?style=flat-square">
@@ -108,16 +108,6 @@ open, but closing the lid still sends it to sleep. Awayke switches the one macOS
 stop that, using a small permission you approve once, and switches it straight back when you are done.
 Awayke is tiny and native: no background helper, no kernel extension, no telemetry.
 
-
-## Welcome window
-
-<p align="center">
-  <img src="docs/intro/awayke-welcome-1.png" width="270" alt="Awayke welcome, page one">
-  <img src="docs/intro/awayke-welcome-2.png" width="270" alt="Awayke welcome, page two">
-  <img src="docs/intro/awayke-welcome-3.png" width="270" alt="Awayke welcome, page three">
-</p>
-
-Version 1.5 has a new three-page welcome with a frosted glass panel. Each page plays its animation once.
 
 ## Install
 
@@ -312,16 +302,3 @@ timer lengths, accent colours and a few extra options.
 
 [MIT](LICENSE). Copyright (c) 2026 Adam Boudjemaa (original Sleepless) and Copyright (c) 2026
 Solomon (Awayke changes).
-
-## Unsigned apps: how to open them, and how to check your download
-
-These apps are not signed yet. Signing needs Apple's paid developer account (and a Windows code-signing certificate), which the project does not have yet. The apps are safe to use as far as the author knows, but your computer cannot prove who made them, so it warns you the first time.
-
-- **Mac:** right-click the app, choose **Open**, then **Open** again. If there is no Open button, go to System Settings > Privacy & Security and click **Open Anyway**.
-- **Windows:** if SmartScreen says "Windows protected your PC", click **More info**, then **Run anyway**.
-
-To check that a download has not been changed, compare its SHA-256 fingerprint with the one in [CHECKSUMS.md](CHECKSUMS.md) (Mac: `shasum -a 256 <file>` in Terminal; Windows: `certutil -hashfile <file> SHA256`).
-
-## Trademarks
-
-Awayke is an independent project. Apple, Mac and macOS are trademarks of Apple Inc.; Windows is a trademark of Microsoft Corporation. Not affiliated with or endorsed by them.

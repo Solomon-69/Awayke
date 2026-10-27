@@ -19,7 +19,7 @@
     <Description>Keeps your PC awake</Description>
     <Company>Solomon</Company>
     <Copyright>Copyright (c) 2026 Solomon</Copyright>
-    <Version>1.5.0</Version>
+    <Version>1.4.0</Version>
 
     <!-- One self-contained Awayke.exe: no .NET install needed on the PC. -->
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>

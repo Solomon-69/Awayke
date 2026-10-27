@@ -164,16 +164,17 @@ struct PopoverView: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 13, style: .continuous)
                     .fill(model.isOn ? accent.opacity(0.20) : Color.primary.opacity(0.07))
+                // The logo swaps in one frame: no cross-fade (two half-faded glyphs looked dim for a moment).
                 ZStack {
-                    FlickeringCandle(size: NSSize(width: 28, height: 20), color: accent, active: model.isOn)
-                        .opacity(model.isOn ? 1 : 0)
-                        .scaleEffect(model.isOn ? 1 : 0.8)
-                    Image(nsImage: EyeGlyph.image(awake: false, size: NSSize(width: 28, height: 20)))
-                        .renderingMode(.template)
-                        .foregroundStyle(.secondary)
-                        .opacity(model.isOn ? 0 : 1)
-                        .scaleEffect(model.isOn ? 0.8 : 1)
+                    if model.isOn {
+                        FlickeringCandle(size: NSSize(width: 28, height: 20), color: accent, active: true)
+                    } else {
+                        Image(nsImage: EyeGlyph.image(awake: false, size: NSSize(width: 28, height: 20)))
+                            .renderingMode(.template)
+                            .foregroundStyle(.secondary)
+                    }
                 }
+                .transaction { $0.animation = nil }
             }
             .frame(width: 44, height: 44)
             .shadow(color: accent.opacity(model.isOn ? 0.55 : 0), radius: 14)

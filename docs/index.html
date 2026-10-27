@@ -125,7 +125,7 @@
   .reqs b { color: var(--ink-2); font-weight: 600; }
 
   .stagebox { position: relative; display: grid; place-items: center; }
-  .glow { position: absolute; inset: 8% 4%; background: radial-gradient(closest-side, var(--accent-soft), transparent); filter: blur(10px); }
+  .glow { position: absolute; inset: -6% -10%; pointer-events: none; background: radial-gradient(closest-side, var(--accent-soft), transparent 92%); -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent 100%); mask-image: radial-gradient(closest-side, #000 55%, transparent 100%); }
   .shot { position: relative; width: min(560px, 100%); margin: 0 auto; animation: pop .9s var(--spring) both .2s; }
   .shot img { width: 100%; height: auto; border-radius: 14px; box-shadow: var(--shadow-lift); }
   .shot .float { display: block; animation: float 7s ease-in-out infinite 1.2s; }
@@ -194,6 +194,27 @@
   }
   /* showcase pictures fade softly into the page (edges are feathered in the image itself) */
   img[src*="showcase/"] { border-radius: 0 !important; box-shadow: none !important; }
+
+  /* ---------- Mac / Windows (page standards) ---------- */
+  html[data-os="windows"] .mac-only, html:not([data-os="windows"]) .win-only { display: none !important; }
+  .os-switch { display: inline-flex; gap: 2px; padding: 3px; border-radius: 12px; background: color-mix(in srgb, var(--ink) 6%, transparent); border: 1px solid var(--line); margin: 0 0 18px; }
+  .os-switch button { appearance: none; border: 0; background: none; color: var(--ink-2); font: 600 13px/1 var(--font, system-ui); padding: 8px 12px; min-height: 32px; border-radius: 9px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: background .2s, color .2s, transform .12s; }
+  .os-switch button svg { width: 14px; height: 14px; }
+  .os-switch button:hover { color: var(--ink); }
+  .os-switch button:active { transform: scale(.97); }
+  .os-switch button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 0 0 1px var(--line); }
+  /* Windows previews: real Windows screenshots, solid, with a soft shadow that never ends in a line */
+  .winstage { position: relative; width: min(380px, 100%); margin: 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+  .winstage img, .wingal img { display: block; width: 100%; height: auto; filter: drop-shadow(0 18px 28px rgba(20, 24, 40, .18)) drop-shadow(0 2px 4px rgba(20, 24, 40, .1)); }
+  .winstage .tray { width: min(272px, 72%); }
+  .winstage .tray img { filter: drop-shadow(0 6px 14px rgba(20, 24, 40, .14)); }
+  .wingal { display: flex; flex-wrap: wrap; justify-content: center; gap: 28px; align-items: flex-start; }
+  .wingal figure { margin: 0; width: min(380px, 100%); }
+  .wingal figcaption { text-align: center; font-size: 14px; color: var(--ink-2); margin-top: 10px; }
+  .install .card .yours { display: none; margin-left: auto; font: 600 12px/1 var(--font, system-ui); color: var(--accent); background: var(--accent-soft); padding: 5px 8px; border-radius: 999px; }
+  .install .card.mine .yours { display: inline-block; }
+  .install .card h3 { display: flex; align-items: center; gap: 10px; }
+  html[data-os="windows"] .install .card.win { order: -1; }
 </style>
 </head>
 <body>
@@ -227,24 +248,34 @@
       <h1>Awayke</h1>
       <p class="sub">Keep your MacBook awake with the lid closed</p>
       <p class="lede">Awayke is a small menu bar app. Click the candle and your MacBook stays awake, even with the lid shut. Most keep-awake apps cannot stop lid-close sleep, but Awayke can, and it turns that back off for you.</p>
+      <div class="os-switch" role="group" aria-label="Show the Mac or Windows version"><button type="button" data-os-pick="mac" aria-pressed="true"><svg aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.1zM13.9 5c.7-.9 1.2-2 1.1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.3-.6 3-1.5z"/></svg>Mac</button><button type="button" data-os-pick="windows" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5.3l7.4-1v7.2H3zM11.3 4.2L21 2.8v8.7h-9.7zM3 12.4h7.4v7.2L3 18.6zM11.3 12.4H21v8.8l-9.7-1.4z"/></svg>Windows</button></div>
       <div class="downloads">
-        <a class="btn primary" href="https://github.com/Solomon-69/Awayke/releases/latest/download/Awayke.dmg" target="_blank" rel="noopener">
+        <a class="btn primary" id="dl-mac" data-os="mac" href="https://github.com/Solomon-69/Awayke/releases/latest/download/Awayke.dmg" target="_blank" rel="noopener">
           <svg class="os" aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.7-1-2.7-4.1zM13.9 5c.7-.9 1.2-2 1.1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.2.1 2.3-.6 3-1.5z"/></svg>
           <span>Download for Mac<small>macOS 26 or later, Apple silicon</small></span>
           <svg class="arrow" aria-hidden="true" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M3 8h9.5M8.5 4l4 4-4 4"/></svg>
         </a>
+        <a class="btn" id="dl-win" data-os="windows" href="https://github.com/Solomon-69/Awayke/releases/latest/download/Awayke-windows.zip" target="_blank" rel="noopener">
+          <svg class="os" aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5.3l7.4-1v7.2H3zM11.3 4.2L21 2.8v8.7h-9.7zM3 12.4h7.4v7.2L3 18.6zM11.3 12.4H21v8.8l-9.7-1.4z"/></svg>
+          <span>Download for Windows<small>Windows 10 or 11, 64-bit</small></span>
+          <svg class="arrow" aria-hidden="true" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M3 8h9.5M8.5 4l4 4-4 4"/></svg>
+        </a>
       </div>
-      <p class="dlnote">Version 1.5. The download buttons give the last published build.</p>
+      <p class="dlnote">Version 1.4.2. The download buttons give the last published build.</p>
       <p class="reqs"><b>Mac:</b> macOS 26 Tahoe or later, on Apple silicon. Free, open source (MIT licence), no accounts, no telemetry.</p>
     </div>
 
     <div class="stagebox">
       <div class="glow" aria-hidden="true"></div>
-      <div class="shot">
+      <div class="shot mac-only">
         <picture class="float">
           <source media="(prefers-color-scheme: dark)" srcset="showcase/aw-1-dark.png">
           <img src="showcase/aw-1-light.png" width="1760" height="1120" fetchpriority="high" alt="The Awayke panel open under its menu bar icon">
         </picture>
+      </div>
+      <div class="winstage win-only">
+        <picture><source media="(prefers-color-scheme: dark)" srcset="img/win/awayke-panel-light.png"><img src="img/win/awayke-panel-light.png" alt="The Awayke panel open above the Windows tray" loading="lazy"></picture>
+        <picture class="tray"><source media="(prefers-color-scheme: dark)" srcset="img/win/awayke-tray-light.png"><img src="img/win/awayke-tray-light.png" alt="" loading="lazy"></picture>
       </div>
     </div>
   </div>
@@ -279,7 +310,7 @@
       <p class="kicker reveal">A closer look</p>
       <h2 class="reveal">The panel and the settings</h2>
       <p class="intro reveal">Screenshots of Awayke. Pick an accent colour, and choose how a click works.</p>
-      <div class="gallery">
+      <div class="gallery mac-only">
         <figure class="reveal">
           <picture><source media="(prefers-color-scheme: dark)" srcset="showcase/aw-2-dark.png"><img src="showcase/aw-2-light.png" width="1760" height="1120" loading="lazy" alt="The Awayke panel with the low-battery cutoff magnified"></picture>
           <figcaption>A low-battery cutoff you pick</figcaption>
@@ -293,12 +324,16 @@
           <figcaption>One tidy Settings window</figcaption>
         </figure>
       </div>
+      <div class="wingal win-only">
+        <figure class="reveal"><picture><source media="(prefers-color-scheme: dark)" srcset="img/win/awayke-panel-light.png"><img src="img/win/awayke-panel-light.png" alt="The tray panel: keep awake, lid closed and the auto-off timer" loading="lazy"></picture><figcaption>The tray panel: keep awake, lid closed and the auto-off timer</figcaption></figure>
+        <figure class="reveal"><picture><source media="(prefers-color-scheme: dark)" srcset="img/win/awayke-settings-dark.png"><img src="img/win/awayke-settings-dark.png" alt="Settings: what stays awake and your own timer buttons" loading="lazy"></picture><figcaption>Settings: what stays awake and your own timer buttons</figcaption></figure>
+      </div>
     </div>
   </section>
 
   <section id="welcome">
     <div class="wrap">
-      <p class="kicker reveal">Version 1.5</p>
+      <p class="kicker reveal">Version 1.4.2</p>
       <h2 class="reveal">A calm first minute</h2>
       <p class="intro reveal">A short welcome with a frosted glass panel: what Awayke does, the one permission it needs for lid-closed mode, and where to find it. Each page plays its animation once.</p>
       <div class="gallery welcome">
@@ -324,8 +359,8 @@
       <h2 class="reveal">Download, open, then click the candle</h2>
       <p class="intro reveal">Awayke is not sold through an app store, so macOS may ask you to confirm it the first time you open it.</p>
       <div class="install">
-        <div class="card reveal">
-          <h3>Mac</h3>
+        <div class="card mac reveal">
+          <h3>Mac<span class="yours">Your computer</span></h3>
           <p class="req">macOS 26 Tahoe or later, Apple silicon</p>
           <ol>
             <li><b>Download</b> Awayke.dmg and open it.</li>
@@ -334,6 +369,16 @@
             <li>The first time, Awayke asks for permission once, with Touch ID or your password. Then you can close the lid.</li>
           </ol>
           <p class="why">If macOS blocks the first open: right-click Awayke in Applications and choose Open, then confirm. Or go to System Settings, Privacy &amp; Security and click Open Anyway.</p>
+        </div>
+        <div class="card win reveal">
+          <h3><svg style="width:22px;height:22px" aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5.3l7.4-1v7.2H3zM11.3 4.2L21 2.8v8.7h-9.7zM3 12.4h7.4v7.2L3 18.6zM11.3 12.4H21v8.8l-9.7-1.4z"/></svg>Windows<span class="yours">Your computer</span></h3>
+          <p class="req">Windows 10 or 11, 64-bit</p>
+          <ol>
+            <li><b>Download</b> Awayke-windows.zip, right-click it and choose <b>Extract All</b>. Keep the folder somewhere permanent, for example Documents.</li>
+            <li>Open the folder and run <b>Awayke.exe</b>.</li>
+            <li>If Windows shows "Windows protected your PC", click <b>More info</b>, then <b>Run anyway</b>.</li>
+            <li>Click the <b>Awayke icon</b> in the system tray. If you cannot see it, click the small arrow next to the tray icons.</li>
+          </ol>
         </div>
         <div class="card reveal">
           <h3>About the one-time permission</h3>
@@ -433,6 +478,30 @@
     items.forEach(function (el, i) {
       el.style.transitionDelay = (i % 6) * 40 + 'ms';
       io.observe(el);
+    });
+  })();
+</script>
+<script>
+  // Mac or Windows: guess from this computer, let anyone flip it, and keep pictures, download and steps in step.
+  (function () {
+    var root = document.documentElement;
+    var ua = navigator.userAgent || '';
+    var platform = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '';
+    var guess = /Win/i.test(platform) || /Windows/i.test(ua) ? 'windows' : /Mac/i.test(platform) || /Mac OS X/i.test(ua) ? 'mac' : '';
+    var KEY = 'awayke.page.os', saved = null;
+    try { saved = localStorage.getItem(KEY); } catch (e) {}
+    var dlMac = document.getElementById('dl-mac'), dlWin = document.getElementById('dl-win');
+    function setOS(os, remember) {
+      root.dataset.os = os;
+      var mine = os === 'windows' ? dlWin : dlMac, other = os === 'windows' ? dlMac : dlWin;
+      if (mine && other) { mine.classList.add('primary'); other.classList.remove('primary'); mine.parentNode.insertBefore(mine, mine.parentNode.firstChild); }
+      document.querySelectorAll('.install .card').forEach(function (c) { c.classList.toggle('mine', c.classList.contains(os === 'windows' ? 'win' : 'mac') && os === guess); });
+      document.querySelectorAll('[data-os-pick]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-os-pick') === os)); });
+      if (remember) { try { localStorage.setItem(KEY, os); } catch (e) {} }
+    }
+    setOS(saved === 'mac' || saved === 'windows' ? saved : (guess || 'mac'), false);
+    document.querySelectorAll('[data-os-pick]').forEach(function (b) {
+      b.addEventListener('click', function () { setOS(b.getAttribute('data-os-pick'), true); });
     });
   })();
 </script>

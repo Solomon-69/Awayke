@@ -97,7 +97,6 @@ struct SettingsView: View {
     // MARK: General
     private var general: some View {
         VStack(alignment: .leading, spacing: 18) {
-            SettingsCard { ShareFriendRow(accent: accent) }
             SettingsCard {
                 SettingRow(title: "Launch at login", detail: "Start Awayke when you log in. It always starts switched off.") {
                     SmoothSwitch(isOn: model.launchAtLogin, title: "Launch at login", tint: accent) { want in DispatchQueue.main.async { model.onLogin(want) } }
@@ -429,39 +428,5 @@ private struct IconPreview: View {
             .frame(width: 64, height: 40)
             Text(label).font(.system(size: 11)).foregroundStyle(.secondary)
         }
-    }
-}
-
-
-/// "Share with a friend": zips a clean copy of the app and opens the share picker (AirDrop first).
-private struct ShareFriendRow: View {
-    let accent: Color
-    @State private var box = ShareAnchorBox()
-    @State private var busy = false
-    @State private var error: String?
-    var body: some View {
-        Button {
-            guard !busy else { return }
-            busy = true; error = nil
-            ShareFriend.share(from: box.view) { error = $0; busy = false }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { busy = false }
-        } label: {
-            HStack(alignment: .center, spacing: 12) {
-                Image(systemName: "square.and.arrow.up").font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(accent).frame(width: 22)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(ShareFriend.title).font(.system(size: 13, weight: .medium))
-                    Text(error ?? ShareFriend.hint).font(.system(size: 11.5))
-                        .foregroundStyle(error == nil ? Color.secondary : Color.red)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(.tertiary)
-            }
-            .padding(14).contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .background(ShareAnchor(box: box))
-        .accessibilityLabel(ShareFriend.title)
     }
 }
