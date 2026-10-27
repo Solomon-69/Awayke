@@ -181,7 +181,7 @@ struct SettingsView: View {
                             }
                         }
                         if model.timerChoices.isEmpty {
-                            Text("Only Off for now").font(.system(size: 12)).foregroundStyle(.tertiary)
+                            Text("Only Off for now").font(.system(size: 12)).foregroundStyle(.secondary)
                         }
                     }
                     // Pick a length with a chip or the drum, then add it as a panel button.
@@ -300,7 +300,7 @@ struct SettingsView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, 4)
                     Text(info?["NSHumanReadableCopyright"] as? String ?? "")
-                        .font(.system(size: 11)).foregroundStyle(.tertiary)
+                        .font(.system(size: 11)).foregroundStyle(.secondary)
                         .padding(.top, 4)
                 }
             }

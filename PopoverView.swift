@@ -333,7 +333,7 @@ struct PopoverView: View {
                     .foregroundStyle(.secondary)
                 Text("Settings\u{2026}").font(.system(size: 13))
                 Spacer()
-                Text("\u{2318},").font(.system(size: 11)).foregroundStyle(.tertiary)
+                Text("\u{2318},").font(.system(size: 11)).foregroundStyle(.secondary)
             }
             .rowPadding()
             .contentShape(Rectangle())

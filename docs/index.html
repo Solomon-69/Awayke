@@ -21,10 +21,10 @@
     --surface: #ffffff;
     --ink: #1f1b16;
     --ink-2: #6a6257;
-    --ink-3: #958b7e;
+    --ink-3: #6e675d;
     --line: rgba(31, 27, 22, 0.10);
     --accent: #e07b00;
-    --accent-deep: #b85f00;
+    --accent-deep: #9a4f00;
     --accent-soft: rgba(224, 123, 0, 0.13);
     --shadow: 0 1px 1px rgba(50, 35, 15, 0.04), 0 10px 30px -12px rgba(50, 35, 15, 0.22);
     --shadow-lift: 0 2px 2px rgba(50, 35, 15, 0.05), 0 30px 60px -24px rgba(50, 35, 15, 0.35);
@@ -41,7 +41,7 @@
       --surface: #241f18;
       --ink: #f4efe8;
       --ink-2: #bdb3a4;
-      --ink-3: #8a8073;
+      --ink-3: #91887b;
       --line: rgba(244, 239, 232, 0.09);
       --accent-deep: #f0a244;
       --accent-soft: rgba(224, 123, 0, 0.20);
@@ -56,7 +56,7 @@
     --surface: #241f18;
     --ink: #f4efe8;
     --ink-2: #bdb3a4;
-    --ink-3: #8a8073;
+    --ink-3: #91887b;
     --line: rgba(244, 239, 232, 0.09);
     --accent-deep: #f0a244;
     --accent-soft: rgba(224, 123, 0, 0.20);
@@ -119,8 +119,8 @@
   .btn:active { transform: translate(var(--lean-x), var(--lean-y)) scale(.97); transition-duration: .12s; }
   .btn::before { content: ""; position: absolute; inset: 0; z-index: -1; background: radial-gradient(160px circle at var(--gx, 50%) var(--gy, 50%), rgba(255, 255, 255, .16), transparent 60%); opacity: 0; transition: opacity .3s; }
   .btn:hover::before { opacity: 1; }
-  .btn.primary { background: var(--accent); color: #fff; border-color: transparent; }
-  .btn.primary small { color: rgba(255, 255, 255, .75); }
+  .btn.primary { background: #9a4f00; color: #fff; border-color: transparent; }
+  .btn.primary small { color: rgba(255, 255, 255, .9); }
   .reqs { margin: 18px 0 0; font-size: 13.5px; color: var(--ink-3); }
   .reqs b { color: var(--ink-2); font-weight: 600; }
 
@@ -211,7 +211,7 @@
   .wingal { display: flex; flex-wrap: wrap; justify-content: center; gap: 28px; align-items: flex-start; }
   .wingal figure { margin: 0; width: min(380px, 100%); }
   .wingal figcaption { text-align: center; font-size: 14px; color: var(--ink-2); margin-top: 10px; }
-  .install .card .yours { display: none; margin-left: auto; font: 600 12px/1 var(--font, system-ui); color: var(--accent); background: var(--accent-soft); padding: 5px 8px; border-radius: 999px; }
+  .install .card .yours { display: none; margin-left: auto; font: 600 12px/1 var(--font, system-ui); color: var(--accent-deep); background: var(--accent-soft); padding: 5px 8px; border-radius: 999px; }
   .install .card.mine .yours { display: inline-block; }
   .install .card h3 { display: flex; align-items: center; gap: 10px; }
   html[data-os="windows"] .install .card.win { order: -1; }

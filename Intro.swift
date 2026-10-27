@@ -163,7 +163,7 @@ struct IntroView: View {
             .animation(.spring(response: 0.4, dampingFraction: 0.75), value: ready)
             .rise(3, shown)
             Text("It only allows one thing: turning sleep off and on. Remove it any time with uninstall.sh.")
-                .font(.system(size: 11)).foregroundStyle(.tertiary).multilineTextAlignment(.center)
+                .font(.system(size: 11)).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 .rise(4, shown)
         }
         .frame(maxWidth: .infinity)
