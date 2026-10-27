@@ -10,6 +10,31 @@ Versions 1.0.0 to 1.2.7 below are the original Sleepless releases and are kept f
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-10-27
+
+New features inspired by Insomnia by Krish Garg (MIT licence). Awayke's own look stays the same.
+
+### Added
+- **Add 30 min** button next to the countdown while a timer runs (Mac and Windows).
+- Timers can now be up to 30 days long (Mac and Windows).
+- A notice 5 minutes before the timer ends, so you can add time (Mac and Windows; can be turned off).
+- Time left shown next to the menu bar icon (Mac, optional) and in the tray icon's hover text (Windows).
+- New **Lid** section in Settings on Mac. While Awayke is on and the lid is closed it can:
+  turn the screen and keyboard light off, mute the sound, pause the apps you choose
+  (Slack, WhatsApp and Discord to start with) or every other app. Everything goes back when
+  the lid opens, when Awayke switches off or quits, and at the next start after a crash.
+  Editors, terminals, browsers, AI apps, Apple apps and meeting or recording apps are never paused.
+- Keep terminals, editors and AI apps out of App Nap while Awayke is on (Mac, off by default).
+- Spots Chrome, Arc, Edge, Brave or Comet slowing hidden pages and offers to relaunch them so pages keep working with the lid closed (Mac).
+- **Check for updates** in Settings (Mac and Windows). It asks GitHub only when you click and installs nothing.
+- An activity log of what Awayke did, kept on your Mac and readable only by you (Settings > About > Show activity log).
+
+### Changed
+- **Turn off at low battery** now has its own switch and is off by default (Mac and Windows). It only matters if you leave the Mac on battery with the lid shut for a long time.
+
+### Removed
+- The "On battery, safety net on" status text and the "Turn off in Low Power Mode" setting.
+
 ## [1.4.3] - 2026-10-27
 
 ### Fixed

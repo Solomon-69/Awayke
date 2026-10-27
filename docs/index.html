@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Awayke: keep your MacBook awake with the lid closed</title>
-<meta name="description" content="Awayke is a free menu bar app for Mac. One click keeps your MacBook awake even with the lid closed, with a timer and a low-battery cutoff so it never runs flat.">
+<meta name="description" content="Awayke is a free menu bar app for Mac. One click keeps your MacBook awake even with the lid closed, with a timer you can extend and quiet lid-closed actions.">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f7f5f1" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#17130e" media="(prefers-color-scheme: dark)">
@@ -261,7 +261,7 @@
           <svg class="arrow" aria-hidden="true" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M3 8h9.5M8.5 4l4 4-4 4"/></svg>
         </a>
       </div>
-      <p class="dlnote">Version 1.4.3. The download buttons give the last published build.</p>
+      <p class="dlnote">Version 1.5.0. The download buttons give the last published build.</p>
       <p class="reqs"><b>Mac:</b> macOS 26 Tahoe or later, on Apple silicon. Free, open source (MIT licence), no accounts, no telemetry.</p>
     </div>
 
@@ -289,17 +289,17 @@
         <div class="point reveal">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 12a8 8 0 1 0 16 0 8 8 0 0 0-16 0zM12 8v4l2.5 2"/></svg>
           <h3>A timer that ends for you</h3>
-          <p>Pick 30 minutes, 1 hour or 2 hours, or add your own from 5 minutes to 24 hours. Normal sleep comes back when the timer ends, when you quit or restart, and if the app ever crashes.</p>
+          <p>Pick a timer, or add your own from 5 minutes to 30 days. Add 30 minutes while it runs, get a notice 5 minutes before the end, and see the time left in the menu bar if you like. Normal sleep comes back when the timer ends, when you quit or restart, and if the app ever crashes.</p>
         </div>
         <div class="point reveal">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M7 7h10v12H7zM10 4h4M10 12h4"/></svg>
-          <h3>Stops before the battery does</h3>
-          <p>On battery, Awayke switches itself off at a charge level you choose, from 5 to 50 percent. It can also step aside when your Mac is in Low Power Mode.</p>
+          <h3>Quiet with the lid closed</h3>
+          <p>While Awayke is on and the lid is shut, the screen goes dark, the sound is muted, and the chat apps you choose are paused to save battery. Everything comes back when you open the lid.</p>
         </div>
         <div class="point reveal">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 3l7 3v5c0 4.5-3 8.3-7 9.5-4-1.2-7-5-7-9.5V6z"/></svg>
           <h3>Small, native and quiet</h3>
-          <p>No background helper, no kernel extension and no telemetry. Awayke makes no network connections and has no accounts.</p>
+          <p>No background helper, no kernel extension and no telemetry. It only goes online when you click Check for updates, and an activity log on your Mac shows what it did.</p>
         </div>
       </div>
     </div>
@@ -313,7 +313,7 @@
       <div class="gallery mac-only">
         <figure class="reveal">
           <picture><source media="(prefers-color-scheme: dark)" srcset="showcase/aw-2-dark.png"><img src="showcase/aw-2-light.png" width="1760" height="1120" loading="lazy" alt="The Awayke panel with the low-battery cutoff magnified"></picture>
-          <figcaption>A low-battery cutoff you pick</figcaption>
+          <figcaption>An optional low-battery cutoff</figcaption>
         </figure>
         <figure class="reveal">
           <picture><source media="(prefers-color-scheme: dark)" srcset="showcase/aw-3-dark.png"><img src="showcase/aw-3-light.png" width="1760" height="1120" loading="lazy" alt="The Awayke panel with the auto-off timer magnified"></picture>
@@ -333,7 +333,7 @@
 
   <section id="welcome" class="mac-only">
     <div class="wrap">
-      <p class="kicker reveal">Version 1.4.3</p>
+      <p class="kicker reveal">Version 1.5.0</p>
       <h2 class="reveal">A calm first minute</h2>
       <p class="intro reveal">A short welcome with a frosted glass panel: what Awayke does, the one permission it needs for lid-closed mode, and where to find it. Each page plays its animation once.</p>
       <div class="gallery welcome">
@@ -400,7 +400,7 @@
       <h2 class="reveal">Good to know</h2>
       <details class="reveal">
         <summary>Is it safe? Will my Mac overheat or drain the battery?</summary>
-        <p>It is fine for light work you leave running, such as downloads, syncing or a hotspot. Heavy work with the lid fully shut reduces airflow, so use judgement. The timer and the low-battery cutoff stop it before the battery runs flat.</p>
+        <p>It is fine for light work you leave running, such as downloads, syncing or a hotspot. Heavy work with the lid fully shut reduces airflow, so use judgement. The timer ends it for you, and you can switch on Turn off at low battery so it stops before the battery runs flat.</p>
       </details>
       <details class="reveal">
         <summary>I switched it on, closed the lid, and the Mac still slept.</summary>
@@ -408,7 +408,7 @@
       </details>
       <details class="reveal">
         <summary>Does it collect any data?</summary>
-        <p>No. Awayke makes no network connections, has no analytics and no accounts. Its settings are stored only on your Mac.</p>
+        <p>No. Awayke has no analytics and no accounts, and its settings and activity log stay on your Mac. The only time it goes online is when you click Check for updates, which asks GitHub for the latest version number.</p>
       </details>
       <details class="reveal">
         <summary>Is it open source? Who made it?</summary>

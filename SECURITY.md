@@ -80,15 +80,20 @@ provide either.
 If that trade is not acceptable to you, build from source, decline the one-time setup and
 **don't** run `install.sh`; you can toggle `sudo pmset -a disablesleep 1/0` manually instead and skip the grant.
 
-## Reboot resets it (a safety net you can verify)
+## Reboot resets it (you can verify it)
 
 `disablesleep` is a **runtime** setting. A reboot restores normal sleep, so there is no way
 for Awayke to leave your Mac permanently unable to sleep. Verify it yourself: toggle on,
 reboot, then `pmset -g | grep SleepDisabled` should read `0`.
 
-Awayke adds a second belt-and-suspenders: a **battery-floor auto-off** (default 15%)
-that flips the flag back to `0` while the Mac is awake and discharging, so a forgotten
+Awayke also offers an optional **battery-floor auto-off** (off by default since 1.5; level 5 to
+50%) that flips the flag back to `0` while the Mac is awake and discharging, so a forgotten
 "on" state can't drain the battery to empty.
+
+Since 1.5, apps Awayke pauses with the lid closed are written down before they are paused and
+resumed when the lid opens, when Awayke switches off or quits, by the crash watchdog, and at the
+next start. A process is only resumed if its start time still matches, so a reused process number
+is never touched.
 
 ## Code signing, notarization, and Gatekeeper
 

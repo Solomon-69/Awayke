@@ -6,11 +6,13 @@ namespace Awayke;
 
 /// <summary>
 /// Awayke for Windows: a candle in the tray. On = Windows stays awake (and, if chosen, keeps running with
-/// the lid closed). Auto-off timer, battery cut-off, open at login. Always starts switched off.
+/// the lid closed). Auto-off timer (add time while it runs), optional battery cut-off, open at login. Always starts switched off.
 /// </summary>
 internal sealed class AwaykeApp : ApplicationContext
 {
-    public const string Version = "1.4.0";
+    public const string Version = "1.5.0";
+    public const int AddTimeMinutes = 30;
+    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(15) };
     private const int TickMs = 10_000;
 
     private static readonly Color LightBack = Color.FromArgb(0xF3, 0xF3, 0xF3);
@@ -27,6 +29,9 @@ internal sealed class AwaykeApp : ApplicationContext
 
     private bool on;
     private DateTime? since, offAt;
+    private bool warned;
+    private string? updateStatus;
+    private bool updateAvailable, checkingUpdates;
     private int timer;
     private string? lidError;
     private string? notice;
@@ -88,7 +93,7 @@ internal sealed class AwaykeApp : ApplicationContext
         if (want)
         {
             var battery = Power.ReadBattery();
-            if (battery.Present && battery.OnBattery && battery.Percent <= s.FloorPercent)
+            if (s.BatteryCutoff && battery.Present && battery.OnBattery && battery.Percent <= s.FloorPercent)
             {
                 notice = $"Battery is at {battery.Percent}%, at or below your {s.FloorPercent}% cut-off.";
                 Push();
@@ -98,7 +103,9 @@ internal sealed class AwaykeApp : ApplicationContext
             on = true;
             since = DateTime.Now;
             offAt = timer > 0 ? DateTime.Now.AddMinutes(timer) : null;
+            warned = false;
             if (s.LidMode) ApplyLid();
+            Files.Log("Switched on.");
         }
         else
         {
@@ -106,6 +113,7 @@ internal sealed class AwaykeApp : ApplicationContext
             RestoreLid();
             on = false;
             since = offAt = null;
+            Files.Log("Switched off.");
         }
         UpdateTray();
         Push();
@@ -138,13 +146,84 @@ internal sealed class AwaykeApp : ApplicationContext
             SetOn(false);
             tray.Balloon("Awayke", "Timer finished. Your PC can sleep normally again.");
         }
+        if (on && s.WarnBeforeEnd && !warned && offAt is { } end && end - DateTime.Now <= TimeSpan.FromMinutes(5) && end > DateTime.Now)
+        {
+            warned = true;
+            tray.Balloon("Awayke", $"5 minutes left. Awayke switches off at {end:t}. Open the panel to add time.");
+        }
         var battery = Power.ReadBattery();
-        if (on && battery.Present && battery.OnBattery && battery.Percent <= s.FloorPercent)
+        if (on && s.BatteryCutoff && battery.Present && battery.OnBattery && battery.Percent <= s.FloorPercent)
         {
             SetOn(false);
             tray.Balloon("Awayke", $"Battery at {battery.Percent}%. Awayke switched off so your PC can sleep.");
         }
+        tray.Text = TrayText();
         Push();
+    }
+
+    /// <summary>Adds time to the running timer, never past 30 days from when it was switched on.</summary>
+    private void AddTime()
+    {
+        if (!on || offAt is not { } end) return;
+        var cap = (since ?? DateTime.Now).AddMinutes(Settings.MaxTimerMinutes);
+        var start = end > DateTime.Now ? end : DateTime.Now;
+        var next = start.AddMinutes(AddTimeMinutes);
+        offAt = next > cap ? cap : next;
+        warned = false;
+        Files.Log($"Added {AddTimeMinutes} minutes.");
+    }
+
+    private async void CheckUpdates()
+    {
+        if (checkingUpdates) return;
+        checkingUpdates = true;
+        Push();
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/repos/Solomon-69/Awayke/releases/latest");
+            req.Headers.UserAgent.ParseAdd("Awayke-Windows/" + Version);
+            req.Headers.Accept.ParseAdd("application/vnd.github+json");
+            using var res = await Http.SendAsync(req);
+            var doc = JsonDocument.Parse(await res.Content.ReadAsStringAsync());
+            var tag = doc.RootElement.TryGetProperty("tag_name", out var t) ? t.GetString() ?? "" : "";
+            if (!res.IsSuccessStatusCode || tag.Length == 0) throw new InvalidOperationException("GitHub did not answer.");
+            updateAvailable = IsNewer(tag, Version);
+            updateStatus = updateAvailable ? $"Version {tag.TrimStart('v')} is out. You have {Version}." : $"You have the latest version ({Version}).";
+        }
+        catch (Exception ex)
+        {
+            updateAvailable = false;
+            updateStatus = "Could not check: " + ex.Message;
+        }
+        checkingUpdates = false;
+        Push();
+    }
+
+    /// <summary>"v1.5.0" vs "1.4.3", number by number.</summary>
+    public static bool IsNewer(string latest, string current)
+    {
+        static int[] Parts(string v) => v.Trim().TrimStart('v', 'V').Split('.')
+            .Select(p => int.TryParse(new string(p.TakeWhile(char.IsDigit).ToArray()), out var n) ? n : 0).ToArray();
+        var a = Parts(latest); var b = Parts(current);
+        for (var i = 0; i < Math.Max(a.Length, b.Length); i++)
+        {
+            var x = i < a.Length ? a[i] : 0; var y = i < b.Length ? b[i] : 0;
+            if (x != y) return x > y;
+        }
+        return false;
+    }
+
+    private string TrayText()
+    {
+        if (!on) return "Awayke: sleeps normally";
+        if (offAt is { } end && end > DateTime.Now)
+        {
+            var left = end - DateTime.Now;
+            var mins = Math.Max(1, (int)Math.Ceiling(left.TotalMinutes));
+            var text = mins >= 1440 ? $"{mins / 1440}d {mins % 1440 / 60}h" : mins >= 60 ? $"{mins / 60}h {mins % 60:00}m" : $"{mins}m";
+            return $"Awayke: awake, {text} left";
+        }
+        return "Awayke: awake";
     }
 
     private void OnPowerModeChanged(object? sender, PowerModeChangedEventArgs e)
@@ -171,7 +250,7 @@ internal sealed class AwaykeApp : ApplicationContext
         var fg = theme.TaskbarDark ? Color.White : Color.FromArgb(0x1A, 0x1A, 0x1A);
         var color = on && !s.MonochromeIcon ? Accent(theme.TaskbarDark) : fg;
         tray.SetGlyph((g, px) => Glyph.Draw(g, px, on, color));
-        tray.Text = on ? "Awayke: awake" : "Awayke: sleeps normally";
+        tray.Text = TrayText();
     }
 
     // ---------- Page bridge ----------
@@ -201,6 +280,13 @@ internal sealed class AwaykeApp : ApplicationContext
             choices = s.TimerChoices,
             defaultTimer = s.DefaultTimer,
             floor = s.FloorPercent,
+            batteryCutoff = s.BatteryCutoff,
+            warn = s.WarnBeforeEnd,
+            addMinutes = AddTimeMinutes,
+            maxMinutes = Settings.MaxTimerMinutes,
+            updateStatus,
+            updateAvailable,
+            checkingUpdates,
             battery = new { present = battery.Present, onBattery = battery.OnBattery, percent = battery.Percent },
             login = Files.LoginEnabled(),
             clickToggles = s.ClickToggles,
@@ -231,7 +317,7 @@ internal sealed class AwaykeApp : ApplicationContext
             case "timer":
                 var minutes = Int(m, "minutes");
                 timer = minutes == 0 || s.TimerChoices.Contains(minutes) ? minutes : timer;
-                if (on) offAt = timer > 0 ? DateTime.Now.AddMinutes(timer) : null;
+                if (on) { offAt = timer > 0 ? DateTime.Now.AddMinutes(timer) : null; warned = false; }
                 break;
             case "lid":
                 s.LidMode = Bool(m, "on");
@@ -242,6 +328,13 @@ internal sealed class AwaykeApp : ApplicationContext
                 s.KeepDisplayAwake = Bool(m, "on");
                 if (on) Power.KeepAwake(true, s.KeepDisplayAwake);
                 break;
+            case "batteryCutoff": s.BatteryCutoff = Bool(m, "on"); break;
+            case "warn": s.WarnBeforeEnd = Bool(m, "on"); break;
+            case "addTime": AddTime(); break;
+            case "checkUpdates": CheckUpdates(); return;
+            case "openReleases":
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://github.com/Solomon-69/Awayke/releases/latest") { UseShellExecute = true });
+                return;
             case "floor": s.FloorPercent = Math.Clamp(Int(m, "percent", 15), Settings.FloorMin, Settings.FloorMax); break;
             case "login": Files.SetLogin(Bool(m, "on")); break;
             case "clickToggles": s.ClickToggles = Bool(m, "on"); break;
@@ -282,6 +375,15 @@ internal sealed class AwaykeApp : ApplicationContext
     {
         Push();
         if (args.Has("--test-on")) SetOn(true);
+        if (args.Has("--test-timer") && on)
+        {
+            // Timer of 60 minutes, then "Add 30 min": the self-test reports about 90 minutes left.
+            timer = 60;
+            offAt = DateTime.Now.AddMinutes(60);
+            AddTime();
+            UpdateTray();
+            Push();
+        }
         if (args.TestOpen)
         {
             panel.StayOpen = true;
@@ -321,6 +423,12 @@ internal sealed class AwaykeApp : ApplicationContext
             lidSaved = s.LidSaved,
             lidNow = lid is { } l ? new[] { l.Ac, l.Dc } : null,
             battery = Power.ReadBattery(),
+            batteryCutoff = s.BatteryCutoff,
+            warn = s.WarnBeforeEnd,
+            minutesLeft = offAt is { } t ? (int)Math.Round((t - DateTime.Now).TotalMinutes) : (int?)null,
+            trayText = TrayText(),
+            version = Version,
+            newerCheck = IsNewer("v1.5.1", Version) && !IsNewer("v1.4.3", Version),
         });
     }
 

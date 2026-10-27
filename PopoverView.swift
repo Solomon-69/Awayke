@@ -1,7 +1,7 @@
 // PopoverView.swift. Awayke "Ember" popover (SwiftUI, hosted in the NSPopover).
 //
 // Pure presentation: every action calls back into AppDelegate, which keeps ALL the
-// keep-awake logic (sudo pmset, safety nets, timer, login item) exactly as before.
+// keep-awake logic (sudo pmset, battery cutoff, timer, lid actions, login item) exactly as before.
 // The view only reads PopoverModel, so the switch always mirrors the TRUE system state.
 import SwiftUI
 import AppKit
@@ -49,7 +49,15 @@ enum Pref {
     static let longPress = "longPressIndex"              // 0 short, 1 normal, 2 long
     static let keepDisplayAwake = "keepDisplayAwake"     // true = screen stays on too
     static let defaultTimer = "defaultAutoOffMinutes"    // 0 / 60 / 120
-    static let lowPowerOff = "lowPowerAutoOff"           // turn off in Low Power Mode (on battery)
+    static let batteryCutoff = "batteryCutoffOn"          // turn off at low battery (off by default)
+    static let menuBarTime = "showTimeInMenuBar"         // time left next to the menu bar icon
+    static let warnBeforeEnd = "warnBeforeTimerEnds"     // notice 5 minutes before the timer ends
+    static let lidScreenOff = "lidScreenOff"             // lid closed: screen and keyboard light off
+    static let lidMute = "lidMute"                       // lid closed: mute the sound
+    static let lidPauseChosen = "lidPauseChosen"         // lid closed: pause the chosen apps
+    static let pauseList = "lidPauseList"                // bundle ids of the chosen apps
+    static let lidPauseOthers = "lidPauseOthers"         // lid closed: pause every other Dock app
+    static let appNapOff = "appNapOff"                   // keep busy apps out of App Nap while on
     static let monochromeIcon = "monochromeMenuIcon"     // true = awake icon stays white/black
     static let timerChoices = "autoOffChoices"           // minutes shown as timer buttons (besides Off)
     static let showTimerRow = "panelShowTimer"
@@ -58,34 +66,12 @@ enum Pref {
     static let showInDock = "showInDock"                  // false = menu bar only (default)
 }
 
-let maxTimerMinutes = 24 * 60
-let maxTimerChoices = 5
-
-/// Sorted, no repeats, 1 minute to 24 hours, at most five.
-func cleanTimerChoices(_ list: [Int]) -> [Int] {
-    Array(Set(list.filter { (1...maxTimerMinutes).contains($0) })).sorted().prefix(maxTimerChoices).map { $0 }
-}
-
-/// "30m", "1h", "1h30" for the panel; "30 minutes", "1 hour 30 min" in Settings.
-func timerLabel(_ minutes: Int, long: Bool = false) -> String {
-    if minutes == 0 { return "Off" }
-    let h = minutes / 60, m = minutes % 60
-    if long {
-        let hs = h == 0 ? "" : (h == 1 ? "1 hour" : "\(h) hours")
-        if m == 0 { return hs }
-        return h == 0 ? "\(m) minutes" : "\(hs) \(m) min"
-    }
-    if h == 0 { return "\(m)m" }
-    return m == 0 ? "\(h)h" : "\(h)h\(m)"
-}
-
 let longPressChoices: [(label: String, seconds: TimeInterval)] = [("Short", 0.25), ("Normal", 0.4), ("Long", 0.7)]
 
 @MainActor
 @Observable
 final class PopoverModel {
     var isOn = false
-    var armed = false                 // awake on battery while discharging (safety net live)
     var batteryPercent: Int? = nil    // nil = no internal battery (desktop Mac)
     var charging = false
     var floorPercent = 15
@@ -106,7 +92,19 @@ final class PopoverModel {
     var showTimerRow = true
     var showBatteryRow = true
     var showLoginRow = true
-    var lowPowerOff = true
+    var batteryCutoff = false
+    var showTimeInMenuBar = false
+    var warnBeforeEnd = true
+    var lidScreenOff = true
+    var lidMute = true
+    var lidPauseChosen = false
+    var pauseList = defaultPauseList
+    var lidPauseOthers = false
+    var appNapOff = false
+    var slowedBrowsers: [SlowedBrowser] = []
+    var updateStatus: String? = nil
+    var updateAvailable = false
+    var checkingUpdates = false
     var monochromeIcon = false
     var showInDock = false
 
@@ -117,6 +115,11 @@ final class PopoverModel {
     var onAutoOff: (Int) -> Void = { _ in }
     var onFloor: (Int) -> Void = { _ in }
     var onLogin: (Bool) -> Void = { _ in }
+    var onAddTime: () -> Void = {}
+    var onCheckUpdates: () -> Void = {}
+    var onShowLog: () -> Void = {}
+    var onRefreshBrowsers: () -> Void = {}
+    var onRelaunchBrowser: (String) -> Void = { _ in }
     var onSettingsChanged: () -> Void = {}
     var onOpenSettings: () -> Void = {}
     var onQuit: () -> Void = {}
@@ -198,7 +201,6 @@ struct PopoverView: View {
 
     private func statusLine(now: Date) -> String {
         guard model.isOn else { return "Sleeps when you close the lid" }
-        if model.armed { return "On battery, safety net on" }
         guard let since = model.awakeSince else { return "Stays on with the lid closed" }
         let mins = max(0, Int(now.timeIntervalSince(since) / 60))
         if mins < 1 { return "Awake for under a minute" }
@@ -254,6 +256,10 @@ struct PopoverView: View {
                             .foregroundStyle(.secondary)
                             .contentTransition(.numericText(countsDown: true))
                             .animation(reduceMotion ? nil : .spring(duration: 0.3), value: Int(remaining))
+                        Spacer(minLength: 4)
+                        Button("Add \(addTimeMinutes) min") { model.onAddTime() }
+                            .buttonStyle(QuietButtonStyle())
+                            .help("Add \(addTimeMinutes) minutes to the timer")
                     }
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -296,20 +302,31 @@ struct PopoverView: View {
     // MARK: Battery: cutoff + current level in ONE bar (0-100% scale)
     private var floorRow: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
+            HStack(alignment: .center, spacing: 6) {
                 Text("Turn off at low battery").font(.system(size: 13))
-                Text("\(model.floorPercent)%")
-                    .font(.system(size: 13, weight: .semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(accent)
-                    .contentTransition(.numericText())
-                    .animation(spring, value: model.floorPercent)
+                if model.batteryCutoff {
+                    Text("\(model.floorPercent)%")
+                        .font(.system(size: 13, weight: .semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(accent)
+                        .contentTransition(.numericText())
+                        .animation(spring, value: model.floorPercent)
+                        .transition(.opacity)
+                }
                 Spacer()
+                SmoothSwitch(isOn: model.batteryCutoff, title: "Turn off at low battery", tint: accent) { want in
+                    model.batteryCutoff = want
+                    model.onSettingsChanged()
+                }
             }
-            CutoffBar(cutoff: model.floorPercent, battery: model.batteryPercent,
-                      range: floorRange, glowing: model.isOn) { model.onFloor($0) }
+            if model.batteryCutoff {
+                CutoffBar(cutoff: model.floorPercent, battery: model.batteryPercent,
+                          range: floorRange, glowing: model.isOn) { model.onFloor($0) }
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
         .rowPadding()
+        .animation(spring, value: model.batteryCutoff)
     }
 
     // MARK: "Modules" style bottom: Launch at login card, Settings row, quiet Quit
@@ -396,7 +413,7 @@ struct AccentDots: View {
     }
 }
 
-private struct QuietButtonStyle: ButtonStyle {
+struct QuietButtonStyle: ButtonStyle {
     @State private var hover = false
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -545,13 +562,6 @@ struct CutoffBar: View {
         }
     }
 }
-
-func formatRemaining(_ seconds: TimeInterval) -> String {
-    let r = Int(seconds.rounded())
-    let h = r / 3600, m = (r % 3600) / 60, s = r % 60
-    return h > 0 ? String(format: "%d:%02d:%02d", h, m, s) : String(format: "%d:%02d", m, s)
-}
-
 
 /// The lit candle. The candle keeps one steady colour and brightness; only the flame sways,
 /// redrawn smoothly in place (no fading between poses).

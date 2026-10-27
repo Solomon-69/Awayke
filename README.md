@@ -7,7 +7,7 @@
 <p><b>Keep your MacBook awake with the lid closed. One click in the menu bar.</b></p>
 
 <p>
-  <a href="https://github.com/Solomon-69/Awayke/releases/latest"><img alt="Version 1.4.3" src="https://img.shields.io/badge/version-1.4.3-E07B00?style=flat-square"></a>
+  <a href="https://github.com/Solomon-69/Awayke/releases/latest"><img alt="Version 1.5.0" src="https://img.shields.io/badge/version-1.5.0-E07B00?style=flat-square"></a>
   <img alt="macOS 26 or later, Apple silicon" src="https://img.shields.io/badge/macOS-26%2B-1f1d1a?style=flat-square&logo=apple&logoColor=white">
   <a href="LICENSE"><img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-5b8a5a?style=flat-square"></a>
   <img alt="No telemetry" src="https://img.shields.io/badge/telemetry-none-5b8a5a?style=flat-square">
@@ -63,15 +63,19 @@ Awayke keeps your Mac awake, even with the lid closed, and always hands sleep ba
   <img src="docs/showcase/aw-2-light.png" width="880" alt="The Awayke panel with the low-battery cutoff magnified">
 </picture>
 
-### Stops before your battery does
+### Quiet with the lid closed
 
-On battery, Awayke watches the charge and switches itself off at the level you choose, so a forgotten MacBook never runs flat in your bag.
+While Awayke is on and the lid is shut, it can make the Mac quieter and kinder to the battery. Everything goes back when you open the lid, switch Awayke off or quit (and at the next start if the app ever crashes).
 
-- Pick anywhere from 5 to 50 percent with the slider in the panel.
-- The panel shows the current charge right under the slider.
-- Optionally steps aside when your Mac is in Low Power Mode.
+- Turns the screen and keyboard light off, and wakes them when you open the lid.
+- Mutes the sound, and unmutes it when the lid opens.
+- Pauses the apps you choose (Slack, WhatsApp and Discord to start with), or every other app. Editors, terminals, browsers, AI apps, Apple apps and meeting or recording apps are never paused.
+- Keeps terminals, editors and AI apps out of App Nap while it is on, if you want.
+- Spots Chrome, Arc, Edge, Brave or Comet slowing hidden pages and offers to relaunch them so pages keep working.
 
-<br>
+### Optional low-battery cutoff
+
+Off by default. Switch on **Turn off at low battery** and Awayke switches itself off at the level you choose (5 to 50 percent), so a forgotten MacBook never runs flat in your bag.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/showcase/aw-3-dark.png">
@@ -82,8 +86,9 @@ On battery, Awayke watches the charge and switches itself off at the level you c
 
 Most of the time you only need your Mac awake for a while. Pick a timer and Awayke turns itself off when it runs out, with a live countdown in the panel.
 
-- Off (stay awake until you say), 30 minutes, 1 hour or 2 hours.
-- Add your own timer lengths in Settings, from 5 minutes to 24 hours.
+- Off (stay awake until you say), 1 hour or 2 hours to start with.
+- Add your own timer lengths in Settings, from 5 minutes to 30 days.
+- **Add 30 min** while a timer runs, a notice 5 minutes before it ends, and the time left next to the menu bar icon if you want it.
 - Normal sleep always comes back when the timer ends, when you switch it off, quit, restart, or if the app ever crashes.
 
 <br>
@@ -95,7 +100,7 @@ Most of the time you only need your Mac awake for a while. Pick a timer and Away
 
 ### Set it up exactly how you like
 
-One tidy Settings window holds everything, split into General, Awake, Battery, Appearance and About.
+One tidy Settings window holds everything, split into General, Awake, Lid, Battery, Appearance and About. About has Check for updates and the activity log.
 
 - <b>Awake:</b> keep just the computer running, or keep the screen on too.
 - <b>Clicks:</b> choose whether a click toggles awake or opens the panel, and how long a hold takes.
@@ -173,16 +178,17 @@ If you prefer, Settings can swap the two: a single click opens the panel instead
 | Section | What you can change |
 | --- | --- |
 | **General** | Launch at login, what a single click on the icon does, how long a hold takes |
-| **Awake** | Mac only or Mac and screen, the timer buttons shown in the panel (add your own) |
-| **Battery** | The low-battery cutoff level, turning off in Low Power Mode |
+| **Awake** | Mac only or Mac and screen, the timer buttons shown in the panel (up to 30 days), time left in the menu bar, the 5-minute notice |
+| **Lid** | What happens while the lid is closed: screen off, mute, pause chosen apps or every other app, App Nap, browser relaunch |
+| **Battery** | Turn off at low battery (off by default) and its level |
 | **Appearance** | Accent colour, coloured or monochrome menu bar icon |
-| **About** | Version and credits |
+| **About** | Version, credits, Check for updates, the activity log |
 
 You can also hide the timer, the battery cutoff or the login switch from the panel to keep it short.
 
 ## Privacy
 
-Nothing leaves your Mac. Awayke makes no network connections, has no analytics and no accounts.
+Nothing leaves your Mac. Awayke has no analytics and no accounts. The only network request is the one you make with **Check for updates** (Settings > About), which asks GitHub for the latest version and installs nothing. The activity log (`~/Library/Logs/Awayke/awayke.log`) is readable only by you.
 Its settings are stored locally in macOS preferences.
 
 ## Requirements
@@ -233,7 +239,7 @@ installs, settings and the permission rule carry over. The app you see is `/Appl
 <details>
 <summary><b>Does it collect any data?</b></summary>
 
-No. There are no network connections and no analytics.
+No. There are no analytics, and the only network request is Check for updates when you click it.
 </details>
 
 ## Building from source

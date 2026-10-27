@@ -85,13 +85,15 @@
         <span id="swLid"></span>
       </div>
       <div class="sub">
-        <div class="row" style="padding:0 0 8px;min-height:0;border:0"><div class="grow title">Auto-off timer</div><span class="detail" id="remaining"></span></div>
+        <div class="row" style="padding:0 0 8px;min-height:0;border:0"><div class="grow title">Auto-off timer</div><span class="detail" id="remaining"></span><button class="btn plain" id="addTime" hidden></button></div>
         <div id="timerChips"></div>
       </div>
       <div class="sub" id="batteryRow">
-        <div class="battery-head"><span class="title">Turn off at low battery</span><span class="value" id="floorValue"></span></div>
+        <div class="battery-head" style="align-items:center"><span class="title">Turn off at low battery</span><span class="value" id="floorValue"></span><span style="margin-left:auto" id="swCutoff"></span></div>
+        <div id="cutoffBody">
         <div class="battery-wrap"><input type="range" id="floor" min="0" max="100" step="1" aria-label="Turn off at low battery"><div class="battery-tick" id="batteryTick"></div></div>
         <div class="battery-now"><span id="batteryNow"></span></div>
+        </div>
       </div>
     </div>
     <div class="card">
@@ -128,13 +130,21 @@
         <div style="display:flex;justify-content:flex-end;margin-top:6px"><button class="btn solid" id="addTimer">Add</button></div>
       </div>
       <div class="sub"><div class="title" style="margin-bottom:6px">Default auto-off timer</div><div id="defaultChips"></div><div class="detail" style="margin-top:6px">Used each time Awayke starts. You can still change it in the panel.</div></div>
+      <div class="row"><div class="grow"><div class="title">Warn 5 minutes before the timer ends</div><div class="detail">A notice gives you time to add more. Hover the tray icon to see the time left.</div></div><span id="swWarn"></span></div>
+    </div>
+    <div class="section">Battery</div>
+    <div class="card">
+      <div class="row"><div class="grow"><div class="title">Turn off at low battery</div><div class="detail" id="cutoffDetail"></div></div><span id="swCutoff2"></span></div>
     </div>
     <div class="section">Appearance</div>
     <div class="card">
       <div class="sub"><div class="title" style="margin-bottom:8px">Accent colour</div><div class="swatches" id="swatches"></div></div>
       <div class="sub"><div class="title" style="margin-bottom:6px">Tray icon when awake</div><div id="monoSeg"></div></div>
     </div>
-    <div class="card"><div class="sub about" id="about"></div></div>
+    <div class="card"><div class="sub about" id="about"></div>
+      <div class="sub"><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn solid" id="checkUpdates">Check for updates</button><button class="btn plain" id="openReleases" hidden>Open download page</button></div>
+      <div class="detail" id="updateStatus" style="margin-top:6px"></div><div class="detail" style="margin-top:4px">Checking asks GitHub once and installs nothing.</div></div>
+    </div>
   </div>
 </div>
 <script src="kit.js"></script>
@@ -149,6 +159,13 @@
   const swLid = kit.sw(S.lidMode, 'Keep running with the lid closed', v => kit.post('lid', { on: v }));
   const swLogin = kit.sw(S.login, 'Open at login', v => { swLogin2.force(v); kit.post('login', { on: v }); });
   const swLogin2 = kit.sw(S.login, 'Open at login', v => { swLogin.force(v); kit.post('login', { on: v }); });
+  const swCutoff = kit.sw(S.batteryCutoff, 'Turn off at low battery', v => { swCutoff2.force(v); kit.post('batteryCutoff', { on: v }); });
+  const swCutoff2 = kit.sw(S.batteryCutoff, 'Turn off at low battery', v => { swCutoff.force(v); kit.post('batteryCutoff', { on: v }); });
+  const swWarn = kit.sw(S.warn, 'Warn 5 minutes before the timer ends', v => kit.post('warn', { on: v }));
+  $('swCutoff').replaceWith(swCutoff); $('swCutoff2').replaceWith(swCutoff2); $('swWarn').replaceWith(swWarn);
+  $('addTime').onclick = () => kit.post('addTime');
+  $('checkUpdates').onclick = () => kit.post('checkUpdates');
+  $('openReleases').onclick = () => kit.post('openReleases');
   $('swAwake').replaceWith(swAwake); $('swLid').replaceWith(swLid); $('swLogin').replaceWith(swLogin); $('swLogin2').replaceWith(swLogin2);
 
   const clickSeg = kit.chips([{ label: 'Open the panel', value: 'panel' }, { label: 'Switch awake', value: 'toggle' }],
@@ -161,8 +178,8 @@
     S.mono ? 'mono' : 'accent', v => kit.post('mono', { on: v === 'mono' }), true);
   $('monoSeg').append(monoSeg);
 
-  $('newTimer').append(kit.chipDrum({ title: 'New timer', mode: 'duration', value: newTimerValue, min: 5, max: 1440,
-    presets: [15, 45, 90, 180], onChange: v => { newTimerValue = v; } }));
+  $('newTimer').append(kit.chipDrum({ title: 'New timer', mode: 'duration', value: newTimerValue, min: 5, max: S.maxMinutes || 43200,
+    presets: [30, 120, 480, 1440], onChange: v => { newTimerValue = v; } }));
   $('addTimer').onclick = () => kit.post('addTimer', { minutes: newTimerValue });
 
   const floor = $('floor');
@@ -219,7 +236,7 @@
       if (!S.choices.length) list.append(kit.el('span', 'detail', 'Only Off for now'));
     }
     timerChips.select(S.timer);
-    $('choicesDetail').textContent = `Off is always there. Add up to ${S.maxChoices} of your own, from 5 minutes to 24 hours.`;
+    $('choicesDetail').textContent = `Off is always there. Add up to ${S.maxChoices} of your own, from 5 minutes to 30 days.`;
     $('addTimer').disabled = S.choices.length >= S.maxChoices;
     $('addTimer').style.opacity = S.choices.length >= S.maxChoices ? .4 : 1;
     const dkey = key;
@@ -240,6 +257,16 @@
 
     const bat = S.battery;
     $('batteryRow').hidden = !bat.present;
+    swCutoff.follow(S.batteryCutoff); swCutoff2.follow(S.batteryCutoff); swWarn.follow(S.warn);
+    $('cutoffBody').hidden = !S.batteryCutoff;
+    $('floorValue').hidden = !S.batteryCutoff;
+    $('cutoffDetail').textContent = S.batteryCutoff
+      ? `On battery, Awayke switches off at ${S.floor}% so your PC can sleep instead of running flat.`
+      : 'Off: Awayke keeps your PC awake until you switch it off or the timer ends, even on a low battery.';
+    $('checkUpdates').textContent = S.checkingUpdates ? 'Checking…' : 'Check for updates';
+    $('checkUpdates').disabled = !!S.checkingUpdates;
+    $('openReleases').hidden = !S.updateAvailable;
+    $('updateStatus').textContent = S.updateStatus || '';
     if (document.activeElement !== floor) { floor.value = S.floor; paintFloor(S.floor); }
     const pos = Math.max(0, Math.min(100, bat.percent));
     $('batteryTick').style.left = pos + '%';
@@ -264,7 +291,9 @@
     if (S.on && S.offAt) {
       const left = Math.max(0, Math.ceil((S.offAt - Date.now()) / 60000));
       $('remaining').textContent = 'Auto-off in ' + kit.duration(Math.max(1, left));
-    } else $('remaining').textContent = '';
+      $('addTime').hidden = false;
+      $('addTime').textContent = 'Add ' + (S.addMinutes || 30) + ' min';
+    } else { $('remaining').textContent = ''; $('addTime').hidden = true; }
   }
   setInterval(tickText, 15000);
 

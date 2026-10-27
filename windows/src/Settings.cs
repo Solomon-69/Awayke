@@ -4,7 +4,7 @@ namespace Awayke;
 internal sealed class Settings
 {
     public const int MaxTimerChoices = 5;
-    public const int MaxTimerMinutes = 24 * 60;
+    public const int MaxTimerMinutes = 30 * 24 * 60;   // 30 days
     public const int FloorMin = 5, FloorMax = 50;
 
     public bool LidMode { get; set; } = true;
@@ -12,6 +12,10 @@ internal sealed class Settings
     public List<int> TimerChoices { get; set; } = new() { 15, 30, 60, 120 };
     public int DefaultTimer { get; set; }
     public int FloorPercent { get; set; } = 15;
+    /// <summary>Turn off at low battery. Off by default (it was always on before 1.5).</summary>
+    public bool BatteryCutoff { get; set; }
+    /// <summary>Balloon 5 minutes before the auto-off timer ends.</summary>
+    public bool WarnBeforeEnd { get; set; } = true;
     public bool ClickToggles { get; set; }
     public string Accent { get; set; } = "Ember";
     public bool MonochromeIcon { get; set; }

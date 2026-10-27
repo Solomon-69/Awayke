@@ -1,18 +1,19 @@
 // SettingsView.swift. The Awayke Settings window (SwiftUI in an NSWindow, Ember palette).
 //
-// A sidebar of five sections (General, Awake, Battery, Appearance, About). Every control
+// A sidebar of six sections (General, Awake, Lid, Battery, Appearance, About). Every control
 // writes through PopoverModel -> AppDelegate, which saves it to UserDefaults and applies it
-// at once (click behaviour, hold length, screen-awake assertion, timers, safety nets, icon).
+// at once (click behaviour, hold length, screen-awake assertion, timers, battery cutoff, lid actions, icon).
 import SwiftUI
 import AppKit
 
 enum SettingsPane: String, CaseIterable, Identifiable {
-    case general = "General", awake = "Awake", battery = "Battery", appearance = "Appearance", about = "About"
+    case general = "General", awake = "Awake", lid = "Lid", battery = "Battery", appearance = "Appearance", about = "About"
     var id: String { rawValue }
     var icon: String {
         switch self {
         case .general: "gearshape"
         case .awake: "eye"
+        case .lid: "laptopcomputer"
         case .battery: "battery.50percent"
         case .appearance: "paintpalette"
         case .about: "info.circle"
@@ -23,7 +24,16 @@ enum SettingsPane: String, CaseIterable, Identifiable {
 struct SettingsView: View {
     let model: PopoverModel
     let floorRange: ClosedRange<Int>
-    @State private var pane: SettingsPane = .general
+    @State private var pane: SettingsPane
+
+    private let height: CGFloat
+
+    init(model: PopoverModel, floorRange: ClosedRange<Int>, pane: SettingsPane = .general, height: CGFloat = 500) {
+        self.model = model
+        self.height = height
+        self.floorRange = floorRange
+        _pane = State(initialValue: pane)
+    }
     @State private var newTimer = 30
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -48,7 +58,7 @@ struct SettingsView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(width: 660, height: 470)
+        .frame(width: 660, height: height)
         .environment(\.sleepAccent, accent)
         .focusEffectDisabled()   // no blue keyboard-focus rings on the controls
         .tint(accent)
@@ -88,6 +98,7 @@ struct SettingsView: View {
         switch pane {
         case .general: general
         case .awake: awake
+        case .lid: lid
         case .battery: battery
         case .appearance: appearance
         case .about: about
@@ -171,7 +182,7 @@ struct SettingsView: View {
             SettingsCard {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Timer buttons in the panel").font(.system(size: 13, weight: .medium))
-                    Text("Off is always there. Add up to \(maxTimerChoices) of your own, from 5 minutes to 24 hours.")
+                    Text("Off is always there. Add up to \(maxTimerChoices) of your own, from 5 minutes to 30 days.")
                         .font(.system(size: 11.5)).foregroundStyle(.secondary)
                     HStack(spacing: 6) {
                         ForEach(model.timerChoices, id: \.self) { m in
@@ -186,7 +197,7 @@ struct SettingsView: View {
                     }
                     // Pick a length with a chip or the drum, then add it as a panel button.
                     ChipDrumPicker(title: "New timer", value: newTimer, mode: .duration(5...maxTimerMinutes),
-                                   presets: [15, 30, 60, 120], tint: accent, chipColumns: 4,
+                                   presets: [30, 60, 120, 480, 1440, 4320], tint: accent, chipColumns: 3,
                                    label: { timerLabel($0) }) { newTimer = $0 }
                         .padding(.top, 4)
                     HStack {
@@ -210,7 +221,109 @@ struct SettingsView: View {
                     .pickerStyle(.menu).labelsHidden().fixedSize()
                 }
             }
+            SettingsCard {
+                SettingRow(title: "Show time left in the menu bar", detail: "While a timer runs, the time left sits next to the candle.") {
+                    SmoothSwitch(isOn: model.showTimeInMenuBar, title: "Show time left in the menu bar", tint: accent) { setting(\.showTimeInMenuBar).wrappedValue = $0 }
+                }
+                CardDivider()
+                SettingRow(title: "Warn 5 minutes before the timer ends", detail: "A notice gives you time to add more. The panel has an Add \(addTimeMinutes) min button while a timer runs.") {
+                    SmoothSwitch(isOn: model.warnBeforeEnd, title: "Warn 5 minutes before the timer ends", tint: accent) { setting(\.warnBeforeEnd).wrappedValue = $0 }
+                }
+            }
         }
+    }
+
+    // MARK: Lid (what happens while the lid is closed and Awayke is on)
+    private var lid: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("While Awayke is on and the lid is closed. Everything goes back when you open the lid, switch Awayke off or quit.")
+                .font(.system(size: 12)).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            SettingsCard {
+                SettingRow(title: "Turn the screen off", detail: "The screen and keyboard light go dark and wake again when you open the lid.") {
+                    SmoothSwitch(isOn: model.lidScreenOff, title: "Turn the screen off", tint: accent) { setting(\.lidScreenOff).wrappedValue = $0 }
+                }
+                CardDivider()
+                SettingRow(title: "Mute the sound", detail: "So nothing plays from a closed laptop. Unmuted when the lid opens.") {
+                    SmoothSwitch(isOn: model.lidMute, title: "Mute the sound", tint: accent) { setting(\.lidMute).wrappedValue = $0 }
+                }
+            }
+            SettingsCard {
+                SettingRow(title: "Pause chosen apps", detail: "These apps are paused to save battery and carry on when the lid opens.") {
+                    SmoothSwitch(isOn: model.lidPauseChosen, title: "Pause chosen apps", tint: accent) { setting(\.lidPauseChosen).wrappedValue = $0 }
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    FlowChips(items: model.pauseList.map { ($0, appName($0)) }) { id in
+                        model.pauseList.removeAll { $0 == id }
+                        model.onSettingsChanged()
+                    }
+                    Menu("Add an app") {
+                        let running = runningAppChoices()
+                        if running.isEmpty { Text("No other apps running") }
+                        ForEach(running, id: \.id) { app in
+                            Button(app.name) {
+                                model.pauseList.append(app.id)
+                                model.onSettingsChanged()
+                            }
+                        }
+                    }
+                    .menuStyle(.borderlessButton).fixedSize()
+                    .foregroundStyle(accent)
+                }
+                .padding(.horizontal, 14).padding(.bottom, 14)
+                .opacity(model.lidPauseChosen ? 1 : 0.5)
+                CardDivider()
+                SettingRow(title: "Pause every other app", detail: "Off by default. Never pauses editors, terminals, browsers, AI apps, Apple apps, or meeting, recording and dictation apps.") {
+                    SmoothSwitch(isOn: model.lidPauseOthers, title: "Pause every other app", tint: accent) { setting(\.lidPauseOthers).wrappedValue = $0 }
+                }
+            }
+            SettingsCard {
+                SettingRow(title: "Keep busy apps at full speed", detail: "While Awayke is on, terminals, editors and AI apps are kept out of App Nap (macOS slowing apps you are not looking at). Their own setting comes back after. Takes effect for apps opened after you switch on.") {
+                    SmoothSwitch(isOn: model.appNapOff, title: "Keep busy apps at full speed", tint: accent) { setting(\.appNapOff).wrappedValue = $0 }
+                }
+                CardDivider()
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Browsers").font(.system(size: 13, weight: .medium))
+                    if model.slowedBrowsers.isEmpty {
+                        Text("No open browser is slowing its hidden pages. Chrome, Arc, Edge, Brave and Comet slow pages down when the lid is closed unless they were opened with Awayke's relaunch.")
+                            .font(.system(size: 11.5)).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } else {
+                        Text("These slow their pages down while the lid is closed. Relaunch one to keep its pages working. It quits and opens again.")
+                            .font(.system(size: 11.5)).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        ForEach(model.slowedBrowsers) { b in
+                            HStack {
+                                Text(b.name).font(.system(size: 12.5))
+                                Spacer()
+                                Button("Relaunch") { model.onRelaunchBrowser(b.id) }
+                            }
+                        }
+                    }
+                    Button("Check again") { model.onRefreshBrowsers() }
+                        .buttonStyle(QuietButtonStyle())
+                }
+                .padding(14)
+            }
+        }
+        .onAppear { model.onRefreshBrowsers() }
+    }
+
+    private func appName(_ id: String) -> String {
+        if let app = NSRunningApplication.runningApplications(withBundleIdentifier: id).first, let n = app.localizedName { return n }
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) {
+            return FileManager.default.displayName(atPath: url.path).replacingOccurrences(of: ".app", with: "")
+        }
+        return knownAppNames[id] ?? id
+    }
+
+    private func runningAppChoices() -> [(id: String, name: String)] {
+        var seen = Set(model.pauseList)
+        return NSWorkspace.shared.runningApplications.compactMap { app in
+            guard app.activationPolicy == .regular, let id = app.bundleIdentifier,
+                  !isNeverPaused(id), seen.insert(id).inserted else { return nil }
+            return (id, app.localizedName ?? id)
+        }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
     // MARK: Battery
@@ -218,28 +331,33 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 18) {
             SettingsCard {
                 VStack(alignment: .leading, spacing: 10) {
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    HStack(alignment: .center, spacing: 6) {
                         Text("Turn off at low battery").font(.system(size: 13, weight: .medium))
-                        Text("\(model.floorPercent)%")
-                            .font(.system(size: 13, weight: .semibold))
-                            .monospacedDigit()
-                            .foregroundStyle(accent)
-                            .contentTransition(.numericText())
+                        if model.batteryCutoff {
+                            Text("\(model.floorPercent)%")
+                                .font(.system(size: 13, weight: .semibold))
+                                .monospacedDigit()
+                                .foregroundStyle(accent)
+                                .contentTransition(.numericText())
+                        }
                         Spacer()
+                        SmoothSwitch(isOn: model.batteryCutoff, title: "Turn off at low battery", tint: accent) { setting(\.batteryCutoff).wrappedValue = $0 }
                     }
-                    Text("Drag the line. When the battery drops to this level, Awayke switches off so your Mac can sleep.")
+                    Text(model.batteryCutoff
+                         ? "Drag the line. When the battery drops to this level, Awayke switches off so your Mac can sleep instead of running flat."
+                         : "Off: Awayke keeps your Mac awake until you switch it off or the timer ends, even on a low battery.")
                         .font(.system(size: 11.5)).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                    CutoffBar(cutoff: model.floorPercent, battery: model.batteryPercent,
-                              range: floorRange, glowing: model.isOn) { model.onFloor($0) }
-                        .padding(.top, 4)
+                        .contentTransition(.opacity)
+                    if model.batteryCutoff {
+                        CutoffBar(cutoff: model.floorPercent, battery: model.batteryPercent,
+                                  range: floorRange, glowing: model.isOn) { model.onFloor($0) }
+                            .padding(.top, 4)
+                            .transition(.opacity)
+                    }
                 }
                 .padding(14)
-            }
-            SettingsCard {
-                SettingRow(title: "Turn off in Low Power Mode", detail: "On battery, switch off when Low Power Mode is on (unless you just turned it on yourself).") {
-                    SmoothSwitch(isOn: model.lowPowerOff, title: "Turn off in Low Power Mode", tint: accent) { setting(\.lowPowerOff).wrappedValue = $0 }
-                }
+                .animation(reduceMotion ? nil : .spring(duration: 0.32, bounce: 0.12), value: model.batteryCutoff)
             }
         }
     }
@@ -302,6 +420,22 @@ struct SettingsView: View {
                     Text(info?["NSHumanReadableCopyright"] as? String ?? "")
                         .font(.system(size: 11)).foregroundStyle(.secondary)
                         .padding(.top, 4)
+                    HStack(spacing: 8) {
+                        Button(model.checkingUpdates ? "Checking\u{2026}" : "Check for updates") { model.onCheckUpdates() }
+                            .disabled(model.checkingUpdates)
+                        if model.updateAvailable {
+                            Button("Open download page") { NSWorkspace.shared.open(UpdateCheck.releasesPage) }
+                        }
+                        Button("Show activity log") { model.onShowLog() }
+                    }
+                    .padding(.top, 8)
+                    if let status = model.updateStatus {
+                        Text(status).font(.system(size: 11.5)).foregroundStyle(.secondary)
+                            .contentTransition(.opacity)
+                    }
+                    Text("Checking asks GitHub once and installs nothing. The log lists what Awayke did, kept on this Mac only.")
+                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .padding(16)
@@ -384,6 +518,46 @@ private struct TimerChip: View {
         .padding(.horizontal, 10).frame(height: 26)
         .background(Capsule().fill(accent.opacity(0.16)))
         .overlay(Capsule().strokeBorder(accent.opacity(0.4), lineWidth: 1))
+    }
+}
+
+/// Removable chips that wrap onto new lines.
+private struct FlowChips: View {
+    let items: [(id: String, name: String)]
+    let remove: (String) -> Void
+    var body: some View {
+        if items.isEmpty {
+            Text("No apps chosen").font(.system(size: 12)).foregroundStyle(.secondary)
+        } else {
+            WrapLayout(spacing: 6) {
+                ForEach(items, id: \.id) { item in
+                    TimerChip(label: item.name) { remove(item.id) }
+                }
+            }
+        }
+    }
+}
+
+private struct WrapLayout: Layout {
+    var spacing: CGFloat
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width ?? 400
+        var x: CGFloat = 0, y: CGFloat = 0, rowH: CGFloat = 0
+        for v in subviews {
+            let s = v.sizeThatFits(.unspecified)
+            if x > 0 && x + s.width > width { x = 0; y += rowH + spacing; rowH = 0 }
+            x += s.width + spacing; rowH = max(rowH, s.height)
+        }
+        return CGSize(width: width, height: y + rowH)
+    }
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX, y = bounds.minY, rowH: CGFloat = 0
+        for v in subviews {
+            let s = v.sizeThatFits(.unspecified)
+            if x > bounds.minX && x + s.width > bounds.maxX { x = bounds.minX; y += rowH + spacing; rowH = 0 }
+            v.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(s))
+            x += s.width + spacing; rowH = max(rowH, s.height)
+        }
     }
 }
 

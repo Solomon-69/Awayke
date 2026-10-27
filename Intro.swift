@@ -121,7 +121,7 @@ struct IntroView: View {
                 .rise(2, shown)
             VStack(spacing: 8) {
                 feature("cup.and.saucer.fill", "Downloads and music keep going", "Close the lid and long jobs still finish.").rise(3, shown)
-                feature("battery.75percent", "Guards your battery", "Turns itself off at the level you pick.").rise(4, shown)
+                feature("laptopcomputer", "Quiet with the lid shut", "Screen off and sound muted until you open it.").rise(4, shown)
                 feature("timer", "Or for a set time", "30 minutes, an hour, or until you say so.").rise(5, shown)
             }
             .padding(.top, 6)
@@ -178,7 +178,7 @@ struct IntroView: View {
             Text("It lives in your menu bar").font(.system(size: 22, weight: .semibold, design: .rounded)).rise(1, shown)
             VStack(spacing: 8) {
                 feature("cursorarrow.click", "Click the icon", "Switches keeping awake on or off.").rise(2, shown)
-                feature("hand.tap.fill", "Hold it, or right-click", "Opens the panel: timer, battery guard and more.").rise(3, shown)
+                feature("hand.tap.fill", "Hold it, or right-click", "Opens the panel: timer, battery cutoff and more.").rise(3, shown)
                 feature("gearshape.fill", "Settings", "Accent colour, open at login and what a click does.").rise(4, shown)
             }
             .padding(.top, 6)

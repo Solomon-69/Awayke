@@ -144,7 +144,8 @@
   }
 
   function duration(v) {
-    const h = Math.floor(v / 60), m = v % 60;
+    const d = Math.floor(v / 1440), h = Math.floor((v % 1440) / 60), m = v % 60;
+    if (d > 0) return d + 'd' + (h ? ' ' + h + 'h' : '') + (m ? ' ' + m + 'm' : '');
     if (h === 0) return m + 'm';
     return m === 0 ? h + 'h' : h + 'h ' + m + 'm';
   }
