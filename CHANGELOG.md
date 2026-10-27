@@ -10,6 +10,11 @@ Versions 1.0.0 to 1.2.7 below are the original Sleepless releases and are kept f
 
 ## [Unreleased]
 
+## [1.4.3] - 2026-10-27
+
+### Fixed
+- Small grey text is darker and easier to read in light and dark.
+
 ## [1.4.2] - 2026-10-27
 
 ### Fixed
