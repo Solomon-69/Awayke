@@ -10,7 +10,7 @@ namespace Awayke;
 /// </summary>
 internal sealed class AwaykeApp : ApplicationContext
 {
-    public const string Version = "1.5.0";
+    public const string Version = "1.6.0";
     public const int AddTimeMinutes = 30;
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(15) };
     private const int TickMs = 10_000;
@@ -199,7 +199,7 @@ internal sealed class AwaykeApp : ApplicationContext
         Push();
     }
 
-    /// <summary>"v1.5.0" vs "1.4.3", number by number.</summary>
+    /// <summary>"v1.6.0" vs "1.4.3", number by number.</summary>
     public static bool IsNewer(string latest, string current)
     {
         static int[] Parts(string v) => v.Trim().TrimStart('v', 'V').Split('.')

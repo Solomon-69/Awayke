@@ -27,7 +27,7 @@ Check ($r.trayText -match 'left') 'tray tooltip shows the time left'
 Check (-not $r.batteryCutoff) 'battery cutoff is off by default'
 Check $r.warn '5 minute warning is on by default'
 Check $r.newerCheck 'update check compares versions correctly'
-Check ($r.version -eq '1.5.0') 'version is 1.5.0'
+Check ($r.version -eq '1.6.0') 'version is 1.6.0'
 Check ($null -ne $r.tray) 'tray icon has a position on screen'
 Start-Sleep -Seconds 1
 Save-Screen (Join-Path $Shots '01-awayke-desktop-light.png')
