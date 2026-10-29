@@ -428,7 +428,7 @@ internal sealed class AwaykeApp : ApplicationContext
             minutesLeft = offAt is { } t ? (int)Math.Round((t - DateTime.Now).TotalMinutes) : (int?)null,
             trayText = TrayText(),
             version = Version,
-            newerCheck = IsNewer("v1.5.1", Version) && !IsNewer("v1.4.3", Version),
+            newerCheck = IsNewer("v1.6.1", Version) && !IsNewer("v1.5.9", Version),
         });
     }
 
