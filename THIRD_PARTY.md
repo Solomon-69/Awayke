@@ -4,7 +4,7 @@
 
 Awayke is a fork of Sleepless, https://github.com/Aboudjem/Sleepless, Copyright (c) 2026 Adam Boudjemaa, MIT licence. The MIT licence requires the original copyright and licence notice to stay with the code; they are kept in `LICENSE` (both copyright lines) and credited in the README, CHANGELOG and app. Do not remove them. Adam Boudjemaa's commits are kept in this repository's history; if the history is ever squashed into a fresh repo, keep the LICENSE and credits.
 
-## Insomnia (ideas and lists for the 1.5 features)
+## Insomnia (ideas and lists for the 1.5 and 1.6 features)
 
 Several 1.5 features (adding time, the 5-minute notice, lid-closed actions, pausing apps, App Nap,
 browser relaunch, update check, activity log) follow Insomnia, https://github.com/krishhgg/Insomnia,

@@ -33,7 +33,7 @@ TEMPLATE="$SCRIPT_DIR/sleepless.sudoers.template"
 if [ -f "$TEMPLATE" ]; then
   GRANT="$(sed "s/__USER__/$USER_NAME/" "$TEMPLATE")"
 else
-  GRANT="$USER_NAME ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 0, /usr/bin/pmset -a disablesleep 1"
+  GRANT="$USER_NAME ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 0, /usr/bin/pmset -a disablesleep 1, /usr/bin/pmset -a lowpowermode 0, /usr/bin/pmset -a lowpowermode 1"
 fi
 
 echo "Awayke will install this passwordless grant at $SUDOERS_DST (root:wheel, 0440):"

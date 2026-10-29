@@ -1,13 +1,13 @@
 // SettingsView.swift. The Awayke Settings window (SwiftUI in an NSWindow, Ember palette).
 //
-// A sidebar of six sections (General, Awake, Lid, Battery, Appearance, About). Every control
+// A sidebar of seven sections (General, Awake, Lid, Battery, Network, Appearance, About). Every control
 // writes through PopoverModel -> AppDelegate, which saves it to UserDefaults and applies it
 // at once (click behaviour, hold length, screen-awake assertion, timers, battery cutoff, lid actions, icon).
 import SwiftUI
 import AppKit
 
 enum SettingsPane: String, CaseIterable, Identifiable {
-    case general = "General", awake = "Awake", lid = "Lid", battery = "Battery", appearance = "Appearance", about = "About"
+    case general = "General", awake = "Awake", lid = "Lid", battery = "Battery", network = "Network", appearance = "Appearance", about = "About"
     var id: String { rawValue }
     var icon: String {
         switch self {
@@ -15,6 +15,7 @@ enum SettingsPane: String, CaseIterable, Identifiable {
         case .awake: "eye"
         case .lid: "laptopcomputer"
         case .battery: "battery.50percent"
+        case .network: "wifi"
         case .appearance: "paintpalette"
         case .about: "info.circle"
         }
@@ -100,6 +101,7 @@ struct SettingsView: View {
         case .awake: awake
         case .lid: lid
         case .battery: battery
+        case .network: network
         case .appearance: appearance
         case .about: about
         }
@@ -240,14 +242,31 @@ struct SettingsView: View {
                 .font(.system(size: 12)).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             SettingsCard {
-                SettingRow(title: "Turn the screen off", detail: "The screen and keyboard light go dark and wake again when you open the lid.") {
+                SettingRow(title: "Turn the screen off", detail: "The screen goes dark and wakes again when you open the lid.") {
                     SmoothSwitch(isOn: model.lidScreenOff, title: "Turn the screen off", tint: accent) { setting(\.lidScreenOff).wrappedValue = $0 }
                 }
                 CardDivider()
                 SettingRow(title: "Mute the sound", detail: "So nothing plays from a closed laptop. Unmuted when the lid opens.") {
                     SmoothSwitch(isOn: model.lidMute, title: "Mute the sound", tint: accent) { setting(\.lidMute).wrappedValue = $0 }
                 }
+                CardDivider()
+                SettingRow(title: "Turn the keyboard light off", detail: "Comes back at the same brightness when you open the lid.") {
+                    SmoothSwitch(isOn: model.lidKeyboardOff, title: "Turn the keyboard light off", tint: accent) { setting(\.lidKeyboardOff).wrappedValue = $0 }
+                }
+                CardDivider()
+                SettingRow(title: "Switch to dark mode", detail: "Goes back to light when you open the lid, if it was light before. macOS asks once to let Awayke change this.") {
+                    SmoothSwitch(isOn: model.lidDarkMode, title: "Switch to dark mode", tint: accent) { setting(\.lidDarkMode).wrappedValue = $0 }
+                }
+                CardDivider()
+                SettingRow(title: "Turn on Low Power Mode", detail: "Saves battery while the lid is closed. Off again when you open the lid, unless the battery or heat rules still need it.") {
+                    SmoothSwitch(isOn: model.lidLowPower, title: "Turn on Low Power Mode", tint: accent) { setting(\.lidLowPower).wrappedValue = $0 }
+                }
+                CardDivider()
+                SettingRow(title: "Pause Docker when it's idle", detail: "Off by default. Pauses Docker Desktop only when no container is running.") {
+                    SmoothSwitch(isOn: model.lidDocker, title: "Pause Docker when it's idle", tint: accent) { setting(\.lidDocker).wrappedValue = $0 }
+                }
             }
+            if !model.lowPowerAllowed { lowPowerPermission }
             SettingsCard {
                 SettingRow(title: "Pause chosen apps", detail: "These apps are paused to save battery and carry on when the lid opens.") {
                     SmoothSwitch(isOn: model.lidPauseChosen, title: "Pause chosen apps", tint: accent) { setting(\.lidPauseChosen).wrappedValue = $0 }
@@ -358,6 +377,87 @@ struct SettingsView: View {
                 }
                 .padding(14)
                 .animation(reduceMotion ? nil : .spring(duration: 0.32, bounce: 0.12), value: model.batteryCutoff)
+            }
+            SettingsCard {
+                SettingRow(title: "Low Power Mode on low battery", detail: "On battery, below \(model.lowPowerFloor)%, Low Power Mode turns on. It goes off when you charge or switch Awayke off.") {
+                    SmoothSwitch(isOn: model.lowPowerBattery, title: "Low Power Mode on low battery", tint: accent) { setting(\.lowPowerBattery).wrappedValue = $0 }
+                }
+                if model.lowPowerBattery {
+                    HStack {
+                        Text("Below").font(.system(size: 12.5))
+                        Stepper(value: setting(\.lowPowerFloor), in: 10...90, step: 5) {
+                            Text("\(model.lowPowerFloor)%").font(.system(size: 12.5, weight: .semibold)).monospacedDigit()
+                        }
+                        .fixedSize()
+                        Spacer()
+                    }
+                    .padding(.horizontal, 14).padding(.bottom, 12)
+                }
+                CardDivider()
+                SettingRow(title: "Heat safety", detail: "If your Mac gets very hot, Low Power Mode turns on. If it gets dangerously hot, Awayke switches off so the Mac can sleep and cool down.") {
+                    SmoothSwitch(isOn: model.heatRules, title: "Heat safety", tint: accent) { setting(\.heatRules).wrappedValue = $0 }
+                }
+            }
+            if !model.lowPowerAllowed { lowPowerPermission }
+            Text("These rules only work while Awayke is running.")
+                .font(.system(size: 11.5)).foregroundStyle(.secondary)
+        }
+    }
+
+    private var lowPowerPermission: some View {
+        SettingsCard {
+            HStack(alignment: .center, spacing: 10) {
+                Text("Low Power Mode needs your permission once (Touch ID or your password).")
+                    .font(.system(size: 12)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer()
+                Button("Allow") { model.onAllowLowPower() }
+            }
+            .padding(14)
+        }
+    }
+
+    // MARK: Network (iPhone hotspot handoff and tmux nudge, only while Awayke is on)
+    @State private var hotspotPassword = ""
+    private var network: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("Only while Awayke is on. Both are off by default.")
+                .font(.system(size: 12)).foregroundStyle(.secondary)
+            SettingsCard {
+                SettingRow(title: "Join my iPhone hotspot", detail: "If the Wi-Fi drops, Awayke joins your hotspot. Set iPhone hotspot joining to Automatic in System Settings > Wi-Fi. macOS asks once for Location access, only to read Wi-Fi names.") {
+                    SmoothSwitch(isOn: model.hotspotOn, title: "Join my iPhone hotspot", tint: accent) { setting(\.hotspotOn).wrappedValue = $0 }
+                }
+                if model.hotspotOn {
+                    VStack(alignment: .leading, spacing: 8) {
+                        TextField("Hotspot name", text: Binding(get: { model.hotspotName }, set: { model.hotspotName = $0 }))
+                        SecureField(model.hotspotSaved ? "Password saved (type to change)" : "Hotspot password", text: $hotspotPassword)
+                        HStack {
+                            Text(model.hotspotSaved ? "Saved in your keychain." : "Not saved yet.")
+                                .font(.system(size: 11.5)).foregroundStyle(.secondary)
+                            Spacer()
+                            Button("Save") { model.onSaveHotspot(hotspotPassword); hotspotPassword = "" }
+                        }
+                    }
+                    .textFieldStyle(.roundedBorder)
+                    .padding(.horizontal, 14).padding(.bottom, 12)
+                }
+            }
+            SettingsCard {
+                SettingRow(title: "Nudge my coding agent", detail: "After the network is out for 90 seconds and comes back, Awayke types \"continue\" into the tmux panes listed below. A pane only counts if you marked it: tmux set-option -p -t <pane> @awayke-nudge on") {
+                    SmoothSwitch(isOn: model.nudgeOn, title: "Nudge my coding agent", tint: accent) { setting(\.nudgeOn).wrappedValue = $0 }
+                }
+                if model.nudgeOn {
+                    VStack(alignment: .leading, spacing: 8) {
+                        TextField("Panes, like work:1.0, agent:0.1", text: setting(\.nudgeTargets))
+                            .textFieldStyle(.roundedBorder)
+                        HStack {
+                            Text("Press Enter after \"continue\"").font(.system(size: 12.5))
+                            Spacer()
+                            SmoothSwitch(isOn: model.nudgeEnter, title: "Press Enter", tint: accent) { setting(\.nudgeEnter).wrappedValue = $0 }
+                        }
+                    }
+                    .padding(.horizontal, 14).padding(.bottom, 12)
+                }
             }
         }
     }

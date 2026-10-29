@@ -27,8 +27,8 @@ jobs:
           set -euo pipefail
           # Same files, frameworks and deployment target as build.sh (the app needs macOS 26).
           swiftc -O -parse-as-library -target arm64-apple-macos26.0 \
-            -framework AppKit -framework ServiceManagement -framework SwiftUI -framework IOKit -framework CoreAudio \
-            App.swift Glyph.swift PopoverView.swift SettingsView.swift SmoothSwitch.swift ChipDrumPicker.swift Intro.swift Logic.swift LidActions.swift \
+            -framework AppKit -framework ServiceManagement -framework SwiftUI -framework IOKit -framework CoreAudio -framework CoreWLAN -framework CoreLocation -framework Network -framework Security \
+            App.swift Glyph.swift PopoverView.swift SettingsView.swift SmoothSwitch.swift ChipDrumPicker.swift Intro.swift Logic.swift LidActions.swift PowerExtras.swift \
             -o /tmp/Awayke 2> build.log \
             || { echo "::group::swiftc output"; cat build.log; echo "::endgroup::"; exit 1; }
           cat build.log

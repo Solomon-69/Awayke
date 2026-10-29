@@ -9,4 +9,4 @@
 # `sudo pmset -a sleep 0`, `pmset restoredefaults`, etc. all fall through and demand
 # a password. The only thing it lets Awayke do without a prompt is flip lid-close
 # sleep on (1) or off (0). See SECURITY.md for the full threat model.
-__USER__ ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 0, /usr/bin/pmset -a disablesleep 1
+__USER__ ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 0, /usr/bin/pmset -a disablesleep 1, /usr/bin/pmset -a lowpowermode 0, /usr/bin/pmset -a lowpowermode 1

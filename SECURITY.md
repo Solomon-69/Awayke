@@ -47,7 +47,7 @@ which runs the bundled `grant.sh`) or by `install.sh`. Both write this (with you
 substituted for `__USER__`), owned `root:wheel`, mode `0440`:
 
 ```
-<you> ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 0, /usr/bin/pmset -a disablesleep 1
+<you> ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 0, /usr/bin/pmset -a disablesleep 1, /usr/bin/pmset -a lowpowermode 0, /usr/bin/pmset -a lowpowermode 1
 ```
 
 **This grant lets one user run, as root, exactly two fully-specified commands and nothing

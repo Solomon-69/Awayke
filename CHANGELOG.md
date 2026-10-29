@@ -10,6 +10,22 @@ Versions 1.0.0 to 1.2.7 below are the original Sleepless releases and are kept f
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-10-29
+
+### Added
+- Lid closed (Mac): the keyboard light goes off, dark mode comes on and Low Power Mode comes on.
+  Each has its own switch in Settings > Lid, all on by default, and all go back when the lid opens.
+- Pause Docker Desktop while the lid is closed when no container is running (off by default).
+- Low Power Mode below a battery level you choose (40% by default) and heat safety: Low Power Mode
+  when the Mac is very hot, switch off when it is dangerously hot.
+- Network section: join your iPhone hotspot when the Wi-Fi drops (password kept in your keychain)
+  and type "continue" into marked tmux panes after a long outage. Both off by default.
+- The one-time permission now also covers `pmset -a lowpowermode 0|1`; Awayke asks once.
+
+### Fixed
+- The menu bar candle no longer turns upside down for a moment while it sways. The candle is now
+  drawn in place instead of swapping the button picture.
+
 ## [1.5.0] - 2026-10-27
 
 New features inspired by Insomnia by Krish Garg (MIT licence). Awayke's own look stays the same.

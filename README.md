@@ -148,7 +148,7 @@ With that permission it installs one small rule that lets your user account run 
 commands without a password:
 
 ```
-<you> ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 0, /usr/bin/pmset -a disablesleep 1
+<you> ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 0, /usr/bin/pmset -a disablesleep 1, /usr/bin/pmset -a lowpowermode 0, /usr/bin/pmset -a lowpowermode 1
 ```
 
 In plain terms: "turn lid-close sleep off" and "turn lid-close sleep back on". Nothing else.

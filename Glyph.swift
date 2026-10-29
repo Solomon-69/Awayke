@@ -92,3 +92,30 @@ enum EyeGlyph {
         return img
     }
 }
+
+/// The live menu bar candle. Drawn in place on top of the status button (the button itself
+/// holds a blank placeholder of the same size), so the flame can sway by redrawing instead of
+/// swapping `button.image`. Swapping the image every frame made macOS cross-fade snapshots of
+/// the button, and those snapshots sometimes came out upside down: the "flipping" candle.
+final class CandleView: NSView {
+    var awake = false { didSet { if awake != oldValue { needsDisplay = true } } }
+    /// nil = template look (follows the menu bar's white/black); otherwise the accent fill.
+    var color: NSColor? { didSet { needsDisplay = true } }
+    var flicker: CGFloat = 0 { didSet { if flicker != oldValue { needsDisplay = true } } }
+
+    override var isFlipped: Bool { false }
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }   // clicks go to the button
+    override func viewDidChangeEffectiveAppearance() { needsDisplay = true }
+
+    override func draw(_ dirtyRect: NSRect) {
+        let size = EyeGlyph.menuCanvas
+        let lineWidth = max(1.4, size.height * 0.095)
+        let origin = NSPoint(x: (bounds.width - size.width) / 2, y: (bounds.height - size.height) / 2)
+        var box = NSRect(origin: origin, size: size).insetBy(dx: lineWidth * 0.5, dy: lineWidth * 0.5)
+        box.origin.y += 5.5; box.size.height -= 3.5   // same lift as the menu bar image
+        effectiveAppearance.performAsCurrentDrawingAppearance {
+            EyeGlyph.draw(awake: awake, in: box, color: color ?? .labelColor,
+                          lineWidth: lineWidth, flicker: awake ? flicker : 0)
+        }
+    }
+}

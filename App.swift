@@ -60,8 +60,11 @@ private let debugNotification = Notification.Name("com.aboudjem.Sleepless.debug"
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var timer: Timer?
-    private let offGlyph = EyeGlyph.image(awake: false)
-    private let awakeTemplateGlyph = EyeGlyph.image(awake: true)
+    private let blankGlyph: NSImage = {   // same size as the candle, nothing drawn
+        let img = NSImage(size: EyeGlyph.menuCanvas, flipped: false) { _ in true }
+        img.isTemplate = true
+        return img
+    }()
     private var glyphIsAwake: Bool?          // last glyph state shown (nil = none yet)
     private var glyphKey = ""                // state + colour + style, to skip redundant swaps
 
@@ -82,6 +85,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var sessionActive = false        // lid actions + App Nap are live (set on the ON edge)
     private var lidClosed = false            // last lid state seen while on
     private var lidTimer: Timer?             // 2 s lid check, only while on
+    private var network = NetworkWatch()     // hotspot + tmux nudge, only while on
     private var mutedDevice: AudioDeviceID?  // the output Awayke muted at lid close
     private var reminderTimer: Timer?        // "5 minutes left" notice
     private var menuBarTicker: Timer?        // refreshes the time left next to the icon
@@ -115,6 +119,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let resumed = AppPauser.resumeAll()
         if resumed > 0 { ActivityLog.write("Start: resumed \(resumed) paused process(es) left by the last run.") }
         AppNap.restore()
+        KeyboardLight.restore()
+        Appearance.restore()
+        LowPower.restore()
+        checkLowPowerPermission()
         installQuitSignalHandlers()
         startCrashWatchdog()
 
@@ -122,7 +130,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // popover arrow stay put when the state changes.
         statusItem = NSStatusBar.system.statusItem(withLength: statusItemLength)
         if let button = statusItem.button {
-            button.image = offGlyph
+            button.image = blankGlyph   // the candle itself is drawn by `candleView`
             button.imagePosition = .imageOnly
             button.imageScaling = .scaleNone
             button.wantsLayer = true   // set once here, never toggled later (no relayout on pulse)
@@ -209,6 +217,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         model.onRefreshBrowsers = { [weak self] in self?.model.slowedBrowsers = BrowserSpeed.slowed() }
         model.onRelaunchBrowser = { [weak self] id in self?.relaunchBrowser(id) }
+        model.onAllowLowPower = { [weak self] in self?.allowLowPower() }
+        model.onSaveHotspot = { [weak self] pw in self?.saveHotspot(password: pw) }
         model.onSettingsChanged = { [weak self] in self?.settingsChanged() }
         model.onOpenSettings = { [weak self] in self?.openSettings(activate: true) }
         model.onQuit = { [weak self] in self?.quit() }
@@ -236,6 +246,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.warnBeforeEnd = d.object(forKey: Pref.warnBeforeEnd) as? Bool ?? true
         model.lidScreenOff = d.object(forKey: Pref.lidScreenOff) as? Bool ?? true
         model.lidMute = d.object(forKey: Pref.lidMute) as? Bool ?? true
+        model.lidKeyboardOff = d.object(forKey: Pref.lidKeyboardOff) as? Bool ?? true
+        model.lidDarkMode = d.object(forKey: Pref.lidDarkMode) as? Bool ?? true
+        model.lidLowPower = d.object(forKey: Pref.lidLowPower) as? Bool ?? true
+        model.lidDocker = d.bool(forKey: Pref.lidDocker)
+        model.lowPowerBattery = d.object(forKey: Pref.lowPowerBattery) as? Bool ?? true
+        model.lowPowerFloor = min(max(d.object(forKey: Pref.lowPowerFloor) as? Int ?? 40, 10), 90)
+        model.heatRules = d.object(forKey: Pref.heatRules) as? Bool ?? true
+        model.hotspotOn = d.bool(forKey: Pref.hotspotOn)
+        model.hotspotName = d.string(forKey: Pref.hotspotName) ?? ""
+        model.hotspotSaved = Hotspot.hasPassword(for: model.hotspotName)
+        model.nudgeOn = d.bool(forKey: Pref.nudgeOn)
+        model.nudgeTargets = d.string(forKey: Pref.nudgeTargets) ?? ""
+        model.nudgeEnter = d.bool(forKey: Pref.nudgeEnter)
         model.lidPauseChosen = d.bool(forKey: Pref.lidPauseChosen)
         model.pauseList = d.stringArray(forKey: Pref.pauseList) ?? defaultPauseList
         model.lidPauseOthers = d.bool(forKey: Pref.lidPauseOthers)
@@ -274,6 +297,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         d.set(model.warnBeforeEnd, forKey: Pref.warnBeforeEnd)
         d.set(model.lidScreenOff, forKey: Pref.lidScreenOff)
         d.set(model.lidMute, forKey: Pref.lidMute)
+        d.set(model.lidKeyboardOff, forKey: Pref.lidKeyboardOff)
+        d.set(model.lidDarkMode, forKey: Pref.lidDarkMode)
+        d.set(model.lidLowPower, forKey: Pref.lidLowPower)
+        d.set(model.lidDocker, forKey: Pref.lidDocker)
+        d.set(model.lowPowerBattery, forKey: Pref.lowPowerBattery)
+        model.lowPowerFloor = min(max(model.lowPowerFloor, 10), 90)
+        d.set(model.lowPowerFloor, forKey: Pref.lowPowerFloor)
+        d.set(model.heatRules, forKey: Pref.heatRules)
+        d.set(model.hotspotOn, forKey: Pref.hotspotOn)
+        d.set(model.hotspotName, forKey: Pref.hotspotName)
+        d.set(model.nudgeOn, forKey: Pref.nudgeOn)
+        d.set(model.nudgeTargets, forKey: Pref.nudgeTargets)
+        d.set(model.nudgeEnter, forKey: Pref.nudgeEnter)
         d.set(model.lidPauseChosen, forKey: Pref.lidPauseChosen)
         d.set(model.pauseList, forKey: Pref.pauseList)
         d.set(model.lidPauseOthers, forKey: Pref.lidPauseOthers)
@@ -283,7 +319,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         applyDockPolicy()
         updateDisplayAssertion()
         updateStatusGlyph(animated: true)
-        if isOn { enforceBatteryCutoff() }
+        if isOn { enforceBatteryCutoff(); enforcePowerRules() }
+        if model.hotspotOn { Hotspot.askLocationIfNeeded() }
+        checkLowPowerPermission()
         if sessionActive {
             if model.appNapOff { AppNap.disable(for: appNapApps) } else { AppNap.restore() }
         }
@@ -433,6 +471,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             "lidPauseOthers": model.lidPauseOthers, "appNapOff": model.appNapOff,
             "menuBarTime": model.showTimeInMenuBar, "warnBeforeEnd": model.warnBeforeEnd,
             "timerChoices": model.timerChoices, "statusTitle": statusItem.button?.title ?? "",
+            "lidKeyboardOff": model.lidKeyboardOff, "lidDarkMode": model.lidDarkMode,
+            "lidLowPower": model.lidLowPower, "lidDocker": model.lidDocker,
+            "lowPowerBattery": model.lowPowerBattery, "lowPowerFloor": model.lowPowerFloor,
+            "heatRules": model.heatRules, "lowPowerAllowed": LowPower.allowed(), "lowPowerNow": LowPower.isOn(),
+            "keyboardLight": KeyboardLight.level().map { Double($0) } as Any,
+            "darkNow": Appearance.isDark(), "thermal": ProcessInfo.processInfo.thermalState.rawValue,
+            "hotspotOn": model.hotspotOn, "nudgeOn": model.nudgeOn,
+            "candleFrame": candle.map { NSStringFromRect($0.frame) } ?? "none",
+            "candleFlicker": Double(candle?.flicker ?? 0), "candleAwake": candle?.awake ?? false,
             "logExists": FileManager.default.fileExists(atPath: ActivityLog.file.path),
         ]
         if let data = try? JSONSerialization.data(withJSONObject: obj, options: [.prettyPrinted, .sortedKeys]) {
@@ -734,6 +781,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return true
         }
         refresh()                              // applies UI + battery cutoff; switch reflects reality
+        if wantOn, isOn { askLowPowerOnce() }
         if isOn, autoOffMinutes > 0 { startKeepAwakeTimer(minutes: autoOffMinutes) }
         ActivityLog.write(isOn ? "Switched on." : "Switched off.")
         return false
@@ -851,6 +899,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             button.title = " " + menuBarRemaining(end.timeIntervalSinceNow)
             button.font = .monospacedDigitSystemFont(ofSize: NSFont.systemFontSize - 1, weight: .regular)
             button.imagePosition = .imageLeading
+            if let c = candle { placeCandle(c, in: button) }
             if menuBarTicker == nil {
                 let t = Timer(timeInterval: 15, repeats: true) { [weak self] _ in
                     MainActor.assumeIsolated { self?.updateMenuBarTime() }
@@ -862,6 +911,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             menuBarTicker?.invalidate(); menuBarTicker = nil
             if !button.title.isEmpty { button.title = "" }
             button.imagePosition = .imageOnly
+            if let c = candle { placeCandle(c, in: button) }
         }
     }
 
@@ -928,7 +978,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let on = readSleepDisabled()
         updateBatteryModel()
         applyUI(on: on)
-        if on { enforceBatteryCutoff() }
+        if on { enforceBatteryCutoff(); enforcePowerRules() }
     }
 
     private func applyUI(on: Bool) {
@@ -948,60 +998,65 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         updateCountdownLabel()
     }
 
-    // Menu-bar glyph: OFF = template (white/black by menu bar); AWAKE = accent-filled image
-    // (or template if "Monochrome" is chosen). Swapped with a 0.25 s crossfade; same canvas,
-    // fixed-width item, so no size or position jitter.
+    // Menu-bar glyph: OFF = template (white/black by menu bar); AWAKE = accent-filled
+    // (or template if "Monochrome" is chosen). Drawn by `candleView` on top of a blank
+    // placeholder image, so the button image never changes and macOS never cross-fades
+    // snapshots of it (those snapshots were what showed the candle upside down).
     private func updateStatusGlyph(animated: Bool) {
         guard let button = statusItem.button else { return }
         let awake = isOn
         let key = "\(awake)-\(model.accentIndex)-\(model.monochromeIcon)"
         guard key != glyphKey else { return }
         glyphKey = key
-        let image: NSImage
-        if !awake { image = offGlyph }
-        else if model.monochromeIcon { image = awakeTemplateGlyph }
-        else { image = EyeGlyph.image(awake: true, color: accentChoice(model.accentIndex).ns) }
-        if animated, glyphIsAwake != nil {
-            let fade = CATransition()
-            fade.type = .fade
-            fade.duration = 0.25
-            fade.timingFunction = CAMediaTimingFunction(controlPoints: 0.2, 0.9, 0.3, 1)
-            button.layer?.add(fade, forKey: "glyphSwap")
-        }
-        button.image = image
+        let view = candleView(in: button)
+        view.color = (!awake || model.monochromeIcon) ? nil : accentChoice(model.accentIndex).ns
+        view.awake = awake
         glyphIsAwake = awake
         updateFlicker(awake: awake)
     }
 
-    // MARK: - Candle flicker: while awake, the flame gently sways between a few pre-drawn frames.
+    private var candle: CandleView?
+    private func candleView(in button: NSStatusBarButton) -> CandleView {
+        if let c = candle { placeCandle(c, in: button); return c }
+        let c = CandleView(frame: .zero)
+        button.addSubview(c)
+        candle = c
+        placeCandle(c, in: button)
+        return c
+    }
+
+    /// Keep the drawn candle exactly where the (blank) button image sits, with or without
+    /// the time-left text beside it.
+    private func placeCandle(_ c: CandleView, in button: NSStatusBarButton) {
+        let r = button.cell?.imageRect(forBounds: button.bounds) ?? button.bounds
+        let size = EyeGlyph.menuCanvas
+        let frame = NSRect(x: r.midX - size.width / 2, y: r.midY - size.height / 2,
+                           width: size.width, height: size.height).integral
+        if c.frame != frame { c.frame = frame }
+    }
+
+    // MARK: - Candle flicker: while awake, the flame sways gently and continuously.
+    // One smooth sine (about 4.4 s per sway) redrawn in place, 12 times a second.
     private var flickerTimer: Timer?
-    private var flickerFrames: [NSImage] = []
-    // A gentle sway played in order (not random picks, which jumped the flame between its
-    // tallest and shortest frames and read as the candle flipping up and down).
-    private static let flickerOffsets: [CGFloat] = [0, 0.18, 0.3, 0.18, 0, -0.18, -0.3, -0.18]
-    private var flickerIndex = 0
+    private var flickerStart = Date()
 
     private func updateFlicker(awake: Bool) {
         flickerTimer?.invalidate(); flickerTimer = nil
+        candle?.flicker = 0
         guard awake, !reduceMotion else { return }
-        let color: NSColor? = model.monochromeIcon ? nil : accentChoice(model.accentIndex).ns
-        flickerFrames = Self.flickerOffsets.map { EyeGlyph.image(awake: true, color: color, flicker: $0) }
-        let t = Timer(timeInterval: 0.55, repeats: true) { [weak self] _ in
+        flickerStart = Date()
+        let t = Timer(timeInterval: 1.0 / 12, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.flickerStep() }
         }
+        t.tolerance = 0.02
         RunLoop.main.add(t, forMode: .common)
         flickerTimer = t
     }
 
     private func flickerStep() {
-        guard let button = statusItem.button, !flickerFrames.isEmpty, isOn else { return }
-        flickerIndex = (flickerIndex + 1) % flickerFrames.count
-        let frame = flickerFrames[flickerIndex]
-        let fade = CATransition()
-        fade.type = .fade
-        fade.duration = 0.5
-        button.layer?.add(fade, forKey: "flicker")
-        button.image = frame
+        guard let c = candle, isOn else { return }
+        let phase = Date().timeIntervalSince(flickerStart) / 4.4 * 2 * .pi
+        c.flicker = CGFloat(0.3 * sin(phase))
     }
 
     // Update text labels only (no pmset subprocess; safe to call on every slider tick).
@@ -1082,11 +1137,78 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         notify("Battery low (\(percent)%). Awayke turned off.")
     }
 
+    // MARK: - Low Power Mode on low battery, heat rules (only while Awayke is on)
+    private func enforcePowerRules() {
+        let (onBattery, _, percent) = batteryStatus()
+        if model.lowPowerBattery, onBattery, percent < model.lowPowerFloor {
+            if !LowPower.reasons.contains(.battery), LowPower.want(.battery) {
+                ActivityLog.write("Battery at \(percent)%: Low Power Mode on.")
+            }
+        } else { LowPower.drop(.battery) }
+        let heat = ProcessInfo.processInfo.thermalState
+        if model.heatRules, heat == .critical {
+            setDisableSleep(false)
+            applyUI(on: readSleepDisabled())
+            ActivityLog.write("Mac critically hot: switched off.")
+            notify("Your Mac got too hot, so Awayke turned off to let it cool down.")
+            return
+        }
+        if model.heatRules, heat == .serious { LowPower.want(.heat) } else { LowPower.drop(.heat) }
+    }
+
+    private func checkLowPowerPermission() {
+        let needs = model.lidLowPower || model.lowPowerBattery || model.heatRules
+        model.lowPowerAllowed = !needs || LowPower.allowed()
+    }
+
+    /// Older installs have the permission without Low Power Mode. Ask once, when switching on,
+    /// so the lid and battery rules can use it; never again after a "Not now".
+    private func askLowPowerOnce() {
+        checkLowPowerPermission()
+        let key = "askedLowPowerPermission"
+        guard !model.lowPowerAllowed, !UserDefaults.standard.bool(forKey: key) else { return }
+        UserDefaults.standard.set(true, forKey: key)
+        let a = NSAlert()
+        a.messageText = "Allow Low Power Mode?"
+        a.informativeText = "Awayke can now turn on Low Power Mode while the lid is closed or the battery is low. macOS asks you once (Touch ID or your password). You can also do this later in Settings."
+        a.addButton(withTitle: "Allow")
+        a.addButton(withTitle: "Not now")
+        NSApp.activate(ignoringOtherApps: true)
+        if a.runModal() == .alertFirstButtonReturn { allowLowPower() }
+    }
+
+    private func allowLowPower() {
+        if installGrantViaAuth(ask: false) { checkLowPowerPermission() }
+    }
+
+    private func saveHotspot(password: String) {
+        let name = model.hotspotName.trimmingCharacters(in: .whitespaces)
+        model.hotspotName = name
+        UserDefaults.standard.set(name, forKey: Pref.hotspotName)
+        if !name.isEmpty, !password.isEmpty, !Hotspot.savePassword(password, for: name) {
+            notify("Couldn't save the hotspot password in your keychain.")
+        }
+        model.hotspotSaved = Hotspot.hasPassword(for: name)
+        Hotspot.askLocationIfNeeded()
+    }
+
+    private func startNetworkWatch() {
+        network.hotspotOn = { [weak self] in self?.model.hotspotOn ?? false }
+        network.hotspotName = { [weak self] in self?.model.hotspotName ?? "" }
+        network.nudgeOn = { [weak self] in self?.model.nudgeOn ?? false }
+        network.nudgeEnter = { [weak self] in self?.model.nudgeEnter ?? false }
+        network.nudgeTargets = { [weak self] in
+            (self?.model.nudgeTargets ?? "").split(whereSeparator: { $0 == "," || $0 == "\n" || $0 == " " }).map(String.init)
+        }
+        network.start()
+    }
+
     // MARK: - Session: lid actions and App Nap, live only while Awayke is on
     private func beginSession() {
         sessionActive = true
         lidClosed = false
         if model.appNapOff { AppNap.disable(for: appNapApps) }
+        startNetworkWatch()
         let t = Timer(timeInterval: 2, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.checkLid() }
         }
@@ -1102,6 +1224,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         lidTimer?.invalidate(); lidTimer = nil
         if lidClosed { lidDidOpen(reason: "Awayke switched off") }
         AppNap.restore()
+        LowPower.restore()
+        network.stop()
     }
 
     private func checkLid() {
@@ -1123,6 +1247,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let names = AppPauser.pause(bundleIDs: ids)
             if !names.isEmpty { done.append("paused " + names.joined(separator: ", ")) }
         }
+        if model.lidDocker, Docker.isIdle() {
+            let names = AppPauser.pause(bundleIDs: [Docker.bundleID])
+            if !names.isEmpty { done.append("paused idle Docker") }
+        }
+        if model.lidKeyboardOff, KeyboardLight.turnOff() { done.append("keyboard light off") }
+        if model.lidDarkMode {
+            done.append(Appearance.goDark() ? "dark mode on" : "dark mode not allowed")
+        }
+        if model.lidLowPower {
+            done.append(LowPower.want(.lid) ? "Low Power Mode on" : "Low Power Mode needs permission")
+        }
         if model.lidScreenOff {
             updateDisplayAssertion()
             runCapture("/usr/bin/pmset", ["displaysleepnow"])
@@ -1135,6 +1270,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         lidClosed = false
         if let dev = mutedDevice { Sound.unmute(dev); mutedDevice = nil }
         let resumed = AppPauser.resumeAll()
+        KeyboardLight.restore()
+        Appearance.restore()
+        LowPower.drop(.lid)
         updateDisplayAssertion()
         if model.lidScreenOff && reason == "lid opened" {
             var id: IOPMAssertionID = 0   // wake the screen straight away
