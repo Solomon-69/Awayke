@@ -131,14 +131,12 @@ enum LowPower {
         return false
     }
 
-    /// The one-time permission covers Low Power Mode (asks sudo, never prompts).
+    /// The one-time permission covers Low Power Mode without a password (lists the rules,
+    /// never prompts). `sudo -l <cmd>` alone is not enough: it also succeeds for commands
+    /// that would still ask for a password.
     static func allowed() -> Bool {
-        let p = Process()
-        p.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")
-        p.arguments = ["-n", "-l", "/usr/bin/pmset", "-a", "lowpowermode", "1"]
-        p.standardOutput = Pipe(); p.standardError = Pipe()
-        do { try p.run(); p.waitUntilExit() } catch { return false }
-        return p.terminationStatus == 0
+        let out = run("/usr/bin/sudo", ["-n", "-l"])
+        return out.split(separator: "\n").contains { $0.contains("NOPASSWD") && $0.contains("lowpowermode 1") }
     }
 
     private static func set(_ on: Bool) -> Bool {
