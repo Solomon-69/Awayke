@@ -32,7 +32,8 @@ enum KeyboardLight {
               let cls = NSClassFromString("KeyboardBrightnessClient") else { return nil }
         for (name, enc) in measured {
             guard let m = class_getInstanceMethod(cls, NSSelectorFromString(name)),
-                  let e = method_getTypeEncoding(m), String(cString: e) == enc else {
+                  let e = method_getTypeEncoding(m),
+                  String(cString: e).filter({ !$0.isNumber }) == enc else {   // ignore frame offsets
                 ActivityLog.write("Keyboard light left alone: \(name) changed in this macOS.")
                 return nil
             }

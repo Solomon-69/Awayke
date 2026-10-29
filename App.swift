@@ -348,10 +348,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // MARK: - Settings window
-    private func openSettings(activate: Bool) {
+    private func openSettings(activate: Bool, pane: SettingsPane = .general) {
         if popover.isShown { closePopover() }
         if settingsWindow == nil {
-            let host = NSHostingController(rootView: SettingsView(model: model, floorRange: floorMin...floorMax))
+            let host = NSHostingController(rootView: SettingsView(model: model, floorRange: floorMin...floorMax, pane: pane))
             let w = NSWindow(contentViewController: host)
             w.title = "Awayke Settings"
             w.styleMask = [.titled, .closable, .miniaturizable, .fullSizeContentView]
@@ -435,6 +435,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         switch note.object as? String {
         case "popover": if !popover.isShown { openPopover(activate: false) }
         case "settings": openSettings(activate: false)
+        case let c? where c.hasPrefix("settings:"):   // settings:<Pane name>, for screenshots
+            settingsWindow?.close(); settingsWindow = nil
+            openSettings(activate: false, pane: SettingsPane(rawValue: String(c.dropFirst(9))) ?? .general)
         case "toggle": quickToggle()
         case "look:light": NSApp.appearance = NSAppearance(named: .aqua)   // app only, for screenshots
         case "look:dark": NSApp.appearance = NSAppearance(named: .darkAqua)
