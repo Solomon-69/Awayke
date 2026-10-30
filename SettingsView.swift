@@ -522,8 +522,13 @@ struct SettingsView: View {
                         .padding(.top, 4)
                     HStack(spacing: 8) {
                         Button(model.checkingUpdates ? "Checking\u{2026}" : "Check for updates") { model.onCheckUpdates() }
-                            .disabled(model.checkingUpdates)
+                            .disabled(model.checkingUpdates || model.updateBusy)
                         if model.updateAvailable {
+                            Button(model.updateBusy ? "Updating\u{2026}" : "Update now") { model.onInstallUpdate() }
+                                .buttonStyle(.borderedProminent).tint(accent)
+                                .disabled(model.updateBusy)
+                        }
+                        if model.updateFailed {
                             Button("Open download page") { NSWorkspace.shared.open(UpdateCheck.releasesPage) }
                         }
                         Button("Show activity log") { model.onShowLog() }
@@ -533,7 +538,10 @@ struct SettingsView: View {
                         Text(status).font(.system(size: 11.5)).foregroundStyle(.secondary)
                             .contentTransition(.opacity)
                     }
-                    Text("Checking asks GitHub once and installs nothing. The log lists what Awayke did, kept on this Mac only.")
+                    if model.updateBusy {
+                        ProgressView(value: model.updateProgress).tint(accent).padding(.top, 2)
+                    }
+                    Text("Update now downloads the new version from GitHub, checks it against its fingerprint, then swaps it in and reopens Awayke. If it was keeping your Mac awake, it carries on. The log lists what Awayke did, kept on this Mac only.")
                         .font(.system(size: 11)).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }

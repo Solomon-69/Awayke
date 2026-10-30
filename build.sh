@@ -60,7 +60,7 @@ fi
 echo "==> Compiling all Swift sources"
 BIN_TMP="$(mktemp -d)"
 swiftc -O -parse-as-library -target "$TARGET" -framework AppKit -framework ServiceManagement -framework SwiftUI -framework IOKit -framework CoreAudio -framework CoreWLAN -framework CoreLocation -framework Network -framework Security \
-  "$REPO/App.swift" "$REPO/Glyph.swift" "$REPO/PopoverView.swift" "$REPO/SettingsView.swift" "$REPO/SmoothSwitch.swift" "$REPO/ChipDrumPicker.swift" "$REPO/Intro.swift" "$REPO/Logic.swift" "$REPO/LidActions.swift" "$REPO/PowerExtras.swift" -o "$BIN_TMP/$EXEC_NAME"
+  "$REPO/App.swift" "$REPO/Glyph.swift" "$REPO/PopoverView.swift" "$REPO/SettingsView.swift" "$REPO/SmoothSwitch.swift" "$REPO/ChipDrumPicker.swift" "$REPO/Intro.swift" "$REPO/Logic.swift" "$REPO/LidActions.swift" "$REPO/PowerExtras.swift" "$REPO/Updater.swift" -o "$BIN_TMP/$EXEC_NAME"
 
 # 3. Assemble the bundle: Contents/{Info.plist, MacOS/<exe>, Resources/<name>.icns}
 echo "==> Assembling bundle"

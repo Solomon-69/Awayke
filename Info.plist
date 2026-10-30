@@ -8,8 +8,8 @@
     <key>CFBundleDisplayName</key>         <string>Awayke</string>
     <key>CFBundlePackageType</key>         <string>APPL</string>
     <key>CFBundleIconFile</key>            <string>Sleepless</string>
-    <key>CFBundleShortVersionString</key>  <string>1.6.0</string>
-    <key>CFBundleVersion</key>             <string>1.6.0</string>
+    <key>CFBundleShortVersionString</key>  <string>1.7.0</string>
+    <key>CFBundleVersion</key>             <string>1.7.0</string>
     <key>LSMinimumSystemVersion</key>      <string>26.0</string>
     <key>NSAppleEventsUsageDescription</key> <string>Awayke switches your Mac to dark mode while the lid is closed, and back when you open it.</string>
     <key>NSLocationUsageDescription</key>    <string>macOS needs this before Awayke can read Wi-Fi names to join your iPhone hotspot. Your location is never used.</string>

@@ -5,7 +5,7 @@ name: Release
 # anyone can verify the download came from this exact source, with no Apple account
 # involved. See docs/AUDIT.md for how to verify as a user.
 #
-# Assets: Awayke.dmg (drag to Applications), Awayke-<version>.zip and SHA256SUMS.
+# Assets: Awayke.dmg (drag to Applications), Awayke-mac.zip and SHA256SUMS.
 #
 # Optional Apple signing and notarisation
 # ---------------------------------------
@@ -130,7 +130,7 @@ jobs:
         id: zip
         run: |
           set -euo pipefail
-          ASSET="Awayke-${{ steps.ver.outputs.version }}.zip"
+          ASSET="Awayke-mac.zip"
           ditto -c -k --keepParent "dist/Awayke.app" "$ASSET"
           echo "asset=$ASSET" >> "$GITHUB_OUTPUT"
           ls -la "$ASSET"
@@ -192,3 +192,30 @@ jobs:
               --title "Awayke ${{ steps.ver.outputs.version }}" \
               --notes-file NOTES.md
           fi
+
+  windows:
+    name: Windows app
+    needs: [release]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build (self-contained, single file)
+        shell: pwsh
+        run: dotnet publish windows/Awayke.csproj -c Release -o out/Awayke
+      - name: Zip the app
+        shell: pwsh
+        run: Compress-Archive -Path out/Awayke/* -DestinationPath Awayke-windows.zip
+      - name: Add to the release and its checksums
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          gh release download "$TAG" -p SHA256SUMS -D . --clobber
+          sed -i '/Awayke-windows.zip/d' SHA256SUMS
+          sha256sum Awayke-windows.zip >> SHA256SUMS
+          gh release upload "$TAG" Awayke-windows.zip SHA256SUMS --clobber

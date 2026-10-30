@@ -12,6 +12,8 @@ internal static class Program
     private static void Main(string[] argv)
     {
         Files.Init("Awayke");
+        var updateTest = argv.FirstOrDefault(a => a.StartsWith("--selftest-update=", StringComparison.Ordinal));
+        if (updateTest != null) { Environment.ExitCode = Updater.SelfTestAsync(updateTest["--selftest-update=".Length..]).GetAwaiter().GetResult(); return; }
         var args = LaunchArgs.Parse(argv);
 
         using var instance = SingleInstance.Claim("Awayke", args.Quit);

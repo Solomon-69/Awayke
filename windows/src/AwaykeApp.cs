@@ -10,7 +10,7 @@ namespace Awayke;
 /// </summary>
 internal sealed class AwaykeApp : ApplicationContext
 {
-    public const string Version = "1.6.0";
+    public const string Version = "1.7.0";
     public const int AddTimeMinutes = 30;
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(15) };
     private const int TickMs = 10_000;
@@ -31,7 +31,9 @@ internal sealed class AwaykeApp : ApplicationContext
     private DateTime? since, offAt;
     private bool warned;
     private string? updateStatus;
-    private bool updateAvailable, checkingUpdates;
+    private bool updateAvailable, checkingUpdates, installingUpdate;
+    private Updater.Offer? updateOffer;
+    private double updateProgress;
     private int timer;
     private string? lidError;
     private string? notice;
@@ -175,28 +177,50 @@ internal sealed class AwaykeApp : ApplicationContext
 
     private async void CheckUpdates()
     {
-        if (checkingUpdates) return;
+        if (checkingUpdates || installingUpdate) return;
         checkingUpdates = true;
         Push();
         try
         {
-            using var req = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/repos/Solomon-69/Awayke/releases/latest");
-            req.Headers.UserAgent.ParseAdd("Awayke-Windows/" + Version);
-            req.Headers.Accept.ParseAdd("application/vnd.github+json");
-            using var res = await Http.SendAsync(req);
-            var doc = JsonDocument.Parse(await res.Content.ReadAsStringAsync());
-            var tag = doc.RootElement.TryGetProperty("tag_name", out var t) ? t.GetString() ?? "" : "";
-            if (!res.IsSuccessStatusCode || tag.Length == 0) throw new InvalidOperationException("GitHub did not answer.");
+            var (tag, offer) = await Updater.LatestAsync();
             updateAvailable = IsNewer(tag, Version);
-            updateStatus = updateAvailable ? $"Version {tag.TrimStart('v')} is out. You have {Version}." : $"You have the latest version ({Version}).";
+            updateOffer = updateAvailable ? offer : null;
+            updateStatus = !updateAvailable ? $"You have the latest version ({Version})."
+                : offer == null ? $"Version {tag.TrimStart('v')} is out, but its Windows download is not ready yet. Try again soon."
+                : $"Version {tag.TrimStart('v')} is out. You have {Version}.";
         }
         catch (Exception ex)
         {
             updateAvailable = false;
+            updateOffer = null;
             updateStatus = "Could not check: " + ex.Message;
         }
         checkingUpdates = false;
         Push();
+    }
+
+    private async void InstallUpdate()
+    {
+        if (installingUpdate || updateOffer is not { } offer) return;
+        installingUpdate = true; updateProgress = 1;
+        updateStatus = "Downloading the update…";
+        Push();
+        try
+        {
+            var progress = new Progress<double>(p => { updateProgress = p; Push(); });
+            var staged = await Updater.DownloadAsync(offer, progress);
+            var install = Path.GetDirectoryName(Environment.ProcessPath) ?? AppContext.BaseDirectory;
+            Updater.StartSwap(staged, install, Environment.ProcessId);
+            Files.Log($"Updating to {offer.Tag}.");
+            Quit();   // restores sleep settings, then the helper swaps the files and starts the new Awayke
+        }
+        catch (Exception ex)
+        {
+            installingUpdate = false;
+            updateStatus = "Could not update: " + ex.Message + ". The installed app was not changed.";
+            Files.Log("Update failed: " + ex.Message);
+            Push();
+        }
     }
 
     /// <summary>"v1.6.0" vs "1.4.3", number by number.</summary>
@@ -287,6 +311,9 @@ internal sealed class AwaykeApp : ApplicationContext
             updateStatus,
             updateAvailable,
             checkingUpdates,
+            installingUpdate,
+            updateProgress,
+            canInstallUpdate = updateOffer != null,
             battery = new { present = battery.Present, onBattery = battery.OnBattery, percent = battery.Percent },
             login = Files.LoginEnabled(),
             clickToggles = s.ClickToggles,
@@ -332,6 +359,7 @@ internal sealed class AwaykeApp : ApplicationContext
             case "warn": s.WarnBeforeEnd = Bool(m, "on"); break;
             case "addTime": AddTime(); break;
             case "checkUpdates": CheckUpdates(); return;
+            case "installUpdate": InstallUpdate(); return;
             case "openReleases":
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://github.com/Solomon-69/Awayke/releases/latest") { UseShellExecute = true });
                 return;
@@ -428,7 +456,7 @@ internal sealed class AwaykeApp : ApplicationContext
             minutesLeft = offAt is { } t ? (int)Math.Round((t - DateTime.Now).TotalMinutes) : (int?)null,
             trayText = TrayText(),
             version = Version,
-            newerCheck = IsNewer("v1.6.1", Version) && !IsNewer("v1.5.9", Version),
+            newerCheck = IsNewer("v1.7.1", Version) && !IsNewer("v1.6.9", Version),
         });
     }
 

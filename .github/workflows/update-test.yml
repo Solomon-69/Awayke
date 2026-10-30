@@ -1,0 +1,32 @@
+name: Update test
+
+# After every release: the Windows app's own update code checks GitHub, downloads the newest Awayke-windows.zip,
+# verifies its checksum and unzips it (installs nothing).
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build
+        shell: pwsh
+        run: dotnet publish windows/Awayke.csproj -c Release -o out/Awayke
+      - name: Check, download, verify
+        shell: pwsh
+        run: |
+          $p = Start-Process out/Awayke/Awayke.exe -ArgumentList '--selftest-update=update.json' -Wait -PassThru
+          Get-Content update.json
+          $r = Get-Content update.json | ConvertFrom-Json
+          if (-not $r.ok) { throw "update self-test failed: $($r.error)" }

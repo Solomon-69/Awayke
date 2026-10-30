@@ -10,6 +10,18 @@ Versions 1.0.0 to 1.2.7 below are the original Sleepless releases and are kept f
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-10-30
+
+### Added
+- "Update now" in Settings > About (Mac and Windows). It downloads the newest version, checks its
+  fingerprint, replaces the app, and opens the new one. Awayke checks once a day and offers it;
+  if it was keeping your Mac awake, it keeps doing so after the update.
+- Stable download names: `Awayke-mac.zip` and `Awayke-windows.zip` (just the app inside), so
+  `releases/latest/download/<name>` always gives the newest version.
+
+### Fixed
+- The menu bar candle sways with almost no CPU use.
+
 ## [1.6.0] - 2026-10-29
 
 ### Added

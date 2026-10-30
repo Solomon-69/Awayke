@@ -142,8 +142,8 @@
       <div class="sub"><div class="title" style="margin-bottom:6px">Tray icon when awake</div><div id="monoSeg"></div></div>
     </div>
     <div class="card"><div class="sub about" id="about"></div>
-      <div class="sub"><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn solid" id="checkUpdates">Check for updates</button><button class="btn plain" id="openReleases" hidden>Open download page</button></div>
-      <div class="detail" id="updateStatus" style="margin-top:6px"></div><div class="detail" style="margin-top:4px">Checking asks GitHub once and installs nothing.</div></div>
+      <div class="sub"><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn solid" id="checkUpdates">Check for updates</button><button class="btn solid" id="installUpdate" hidden>Update now</button><button class="btn plain" id="openReleases" hidden>Open download page</button></div>
+      <div class="detail" id="updateStatus" style="margin-top:6px"></div><div class="detail" style="margin-top:4px">Checking asks GitHub once and installs nothing. Update now downloads, checks and installs the new version.</div></div>
     </div>
   </div>
 </div>
@@ -166,6 +166,7 @@
   $('addTime').onclick = () => kit.post('addTime');
   $('checkUpdates').onclick = () => kit.post('checkUpdates');
   $('openReleases').onclick = () => kit.post('openReleases');
+  $('installUpdate').onclick = () => kit.post('installUpdate');
   $('swAwake').replaceWith(swAwake); $('swLid').replaceWith(swLid); $('swLogin').replaceWith(swLogin); $('swLogin2').replaceWith(swLogin2);
 
   const clickSeg = kit.chips([{ label: 'Open the panel', value: 'panel' }, { label: 'Switch awake', value: 'toggle' }],
@@ -264,7 +265,10 @@
       ? `On battery, Awayke switches off at ${S.floor}% so your PC can sleep instead of running flat.`
       : 'Off: Awayke keeps your PC awake until you switch it off or the timer ends, even on a low battery.';
     $('checkUpdates').textContent = S.checkingUpdates ? 'Checking…' : 'Check for updates';
-    $('checkUpdates').disabled = !!S.checkingUpdates;
+    $('checkUpdates').disabled = !!S.checkingUpdates || !!S.installingUpdate;
+    $('installUpdate').hidden = !(S.updateAvailable && S.canInstallUpdate);
+    $('installUpdate').disabled = !!S.installingUpdate;
+    $('installUpdate').textContent = S.installingUpdate ? 'Updating ' + Math.round(S.updateProgress) + '%' : 'Update now';
     $('openReleases').hidden = !S.updateAvailable;
     $('updateStatus').textContent = S.updateStatus || '';
     if (document.activeElement !== floor) { floor.value = S.floor; paintFloor(S.floor); }

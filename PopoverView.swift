@@ -131,6 +131,9 @@ final class PopoverModel {
     var updateStatus: String? = nil
     var updateAvailable = false
     var checkingUpdates = false
+    var updateBusy = false
+    var updateFailed = false
+    var updateProgress = 0.0
     var monochromeIcon = false
     var showInDock = false
 
@@ -143,6 +146,7 @@ final class PopoverModel {
     var onLogin: (Bool) -> Void = { _ in }
     var onAddTime: () -> Void = {}
     var onCheckUpdates: () -> Void = {}
+    var onInstallUpdate: () -> Void = {}
     var onShowLog: () -> Void = {}
     var onRefreshBrowsers: () -> Void = {}
     var onRelaunchBrowser: (String) -> Void = { _ in }

@@ -86,6 +86,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var lidClosed = false            // last lid state seen while on
     private var lidTimer: Timer?             // 2 s lid check, only while on
     private var network = NetworkWatch()     // hotspot + tmux nudge, only while on
+    private var napGuard: NSObjectProtocol?  // keeps macOS from App-Napping Awayke's timers while on
+    // Test hooks (set through the debug notification only): pretend the lid is closed/open. "Quiet"
+    // runs the same logic without touching the screen, keyboard light, sound, dark mode or Low Power Mode.
+    private var simulatedLid: Bool?
+    private var quietSimulation = false
+    // Timing telemetry for long runs: the longest gap between two ticks of the lid check and of the poll.
+    private var lidTickLast: Date?, lidTickMaxGap: TimeInterval = 0, lidTicks = 0
+    private var pollLast: Date?, pollMaxGap: TimeInterval = 0, polls = 0
     private var mutedDevice: AudioDeviceID?  // the output Awayke muted at lid close
     private var reminderTimer: Timer?        // "5 minutes left" notice
     private var menuBarTicker: Timer?        // refreshes the time left next to the icon
@@ -152,6 +160,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         refresh()   // reflect TRUE system state on launch (never a stale assumption)
         if !UserDefaults.standard.bool(forKey: IntroPref.done) { showIntro() }
+        resumeAfterUpdate()
+        dailyUpdateCheck()
         timer = Timer.scheduledTimer(timeInterval: pollInterval, target: self,
                                      selector: #selector(poll), userInfo: nil, repeats: true)
     }
@@ -211,6 +221,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.onLogin = { [weak self] want in self?.setLoginItem(want) }
         model.onAddTime = { [weak self] in self?.addTime() }
         model.onCheckUpdates = { [weak self] in self?.checkUpdates() }
+        model.onInstallUpdate = { [weak self] in self?.installUpdate() }
         model.onShowLog = {
             ActivityLog.write("Log opened.")
             NSWorkspace.shared.activateFileViewerSelecting([ActivityLog.file])
@@ -435,6 +446,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         switch note.object as? String {
         case "popover": if !popover.isShown { openPopover(activate: false) }
         case "settings": openSettings(activate: false)
+        case "lid:closed": simulatedLid = true; quietSimulation = false; checkLid()
+        case "lid:closed-quiet": simulatedLid = true; quietSimulation = true; checkLid()
+        case "lid:open": simulatedLid = false; checkLid(); simulatedLid = nil; quietSimulation = false
+        case "telemetry:reset": lidTickMaxGap = 0; pollMaxGap = 0; lidTicks = 0; polls = 0
         case let c? where c.hasPrefix("settings:"):   // settings:<Pane name>, for screenshots
             settingsWindow?.close(); settingsWindow = nil
             openSettings(activate: false, pane: SettingsPane(rawValue: String(c.dropFirst(9))) ?? .general)
@@ -461,6 +476,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Writes what Awayke can see right now to /tmp/awayke-selftest.json (no window, no sound,
     /// nothing changed): the lid, browsers, paused list, settings and the time-left text.
+    private func residentMB() -> Double {
+        var info = mach_task_basic_info(); var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size / 4)
+        let r = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) { task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count) }
+        }
+        return r == KERN_SUCCESS ? (Double(info.resident_size) / 1_048_576 * 10).rounded() / 10 : -1
+    }
+
     private func writeSelfTest() {
         let lid: Any = Lid.isClosed().map { $0 ? "closed" : "open" } ?? "none"
         let obj: [String: Any] = [
@@ -482,7 +505,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             "darkNow": Appearance.isDark(), "thermal": ProcessInfo.processInfo.thermalState.rawValue,
             "hotspotOn": model.hotspotOn, "nudgeOn": model.nudgeOn,
             "candleFrame": candle.map { NSStringFromRect($0.frame) } ?? "none",
-            "candleFlicker": Double(candle?.flicker ?? 0), "candleAwake": candle?.awake ?? false,
+            "lidTicks": lidTicks, "lidMaxGapSec": (lidTickMaxGap * 10).rounded() / 10,
+            "polls": polls, "pollMaxGapSec": (pollMaxGap * 10).rounded() / 10,
+            "napGuard": napGuard != nil, "simulatedLid": simulatedLid.map { $0 ? "closed" : "open" } ?? "off",
+            "lidClosedSeen": lidClosed, "sleepDisabled": readSleepDisabled(),
+            "rssMB": residentMB(), "sampledAt": ISO8601DateFormatter().string(from: Date()),
+            "candleSwaying": candle?.swayAttached ?? false, "candleAwake": candle?.awake ?? false,
             "logExists": FileManager.default.fileExists(atPath: ActivityLog.file.path),
         ]
         if let data = try? JSONSerialization.data(withJSONObject: obj, options: [.prettyPrinted, .sortedKeys]) {
@@ -978,6 +1006,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Core state sync
     @objc private func refresh() {
+        let now = Date()
+        if let last = pollLast { pollMaxGap = max(pollMaxGap, now.timeIntervalSince(last)) }
+        pollLast = now; polls += 1
+        candle?.syncSway()   // macOS can drop a layer animation after a sleep/wake; put it back
         let on = readSleepDisabled()
         updateBatteryModel()
         applyUI(on: on)
@@ -1038,28 +1070,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if c.frame != frame { c.frame = frame }
     }
 
-    // MARK: - Candle flicker: while awake, the flame sways gently and continuously.
-    // One smooth sine (about 4.4 s per sway) redrawn in place, 12 times a second.
-    private var flickerTimer: Timer?
-    private var flickerStart = Date()
-
+    // MARK: - Candle sway: while awake the flame sways by itself (Core Animation, no timer, no redraw).
     private func updateFlicker(awake: Bool) {
-        flickerTimer?.invalidate(); flickerTimer = nil
-        candle?.flicker = 0
-        guard awake, !reduceMotion else { return }
-        flickerStart = Date()
-        let t = Timer(timeInterval: 1.0 / 12, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.flickerStep() }
-        }
-        t.tolerance = 0.02
-        RunLoop.main.add(t, forMode: .common)
-        flickerTimer = t
-    }
-
-    private func flickerStep() {
-        guard let c = candle, isOn else { return }
-        let phase = Date().timeIntervalSince(flickerStart) / 4.4 * 2 * .pi
-        c.flicker = CGFloat(0.3 * sin(phase))
+        candle?.swaying = awake && !reduceMotion
+        candle?.syncSway()
     }
 
     // Update text labels only (no pmset subprocess; safe to call on every slider tick).
@@ -1211,6 +1225,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         sessionActive = true
         lidClosed = false
         if model.appNapOff { AppNap.disable(for: appNapApps) }
+        // Without this, macOS may slow or pause an app with no window while the screen is off, and a
+        // timer (auto-off, battery check, lid check) could fire minutes late. Sleep itself is not blocked here.
+        napGuard = ProcessInfo.processInfo.beginActivity(options: [.userInitiatedAllowingIdleSystemSleep],
+                                                         reason: "Awayke keep-awake timers and lid check")
         startNetworkWatch()
         let t = Timer(timeInterval: 2, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.checkLid() }
@@ -1229,17 +1247,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AppNap.restore()
         LowPower.restore()
         network.stop()
+        if let g = napGuard { ProcessInfo.processInfo.endActivity(g); napGuard = nil }
     }
 
     private func checkLid() {
-        guard sessionActive, let closed = Lid.isClosed(), closed != lidClosed else { return }
+        let now = Date()
+        if let last = lidTickLast { lidTickMaxGap = max(lidTickMaxGap, now.timeIntervalSince(last)) }
+        lidTickLast = now; lidTicks += 1
+        guard sessionActive, let closed = simulatedLid ?? Lid.isClosed(), closed != lidClosed else { return }
         if closed { lidDidClose() } else { lidDidOpen(reason: "lid opened") }
     }
 
     private func lidDidClose() {
         lidClosed = true
         var done: [String] = []
-        if model.lidMute, let dev = Sound.muteOutput() { mutedDevice = dev; done.append("sound muted") }
+        if model.lidMute, !quietSimulation, let dev = Sound.muteOutput() { mutedDevice = dev; done.append("sound muted") }
         let running = NSWorkspace.shared.runningApplications.compactMap { app -> (id: String, regular: Bool)? in
             guard let id = app.bundleIdentifier, !app.isTerminated else { return nil }
             return (id, app.activationPolicy == .regular)
@@ -1254,14 +1276,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let names = AppPauser.pause(bundleIDs: [Docker.bundleID])
             if !names.isEmpty { done.append("paused idle Docker") }
         }
-        if model.lidKeyboardOff, KeyboardLight.turnOff() { done.append("keyboard light off") }
-        if model.lidDarkMode {
+        if model.lidKeyboardOff, !quietSimulation, KeyboardLight.turnOff() { done.append("keyboard light off") }
+        if model.lidDarkMode, !quietSimulation {
             done.append(Appearance.goDark() ? "dark mode on" : "dark mode not allowed")
         }
-        if model.lidLowPower {
+        if model.lidLowPower, !quietSimulation {
             done.append(LowPower.want(.lid) ? "Low Power Mode on" : "Low Power Mode needs permission")
         }
-        if model.lidScreenOff {
+        if model.lidScreenOff, !quietSimulation {
             updateDisplayAssertion()
             runCapture("/usr/bin/pmset", ["displaysleepnow"])
             done.append("screen off")
@@ -1277,7 +1299,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Appearance.restore()
         LowPower.drop(.lid)
         updateDisplayAssertion()
-        if model.lidScreenOff && reason == "lid opened" {
+        if model.lidScreenOff && reason == "lid opened" && !quietSimulation {
             var id: IOPMAssertionID = 0   // wake the screen straight away
             _ = IOPMAssertionDeclareUserActivity("Awayke: lid opened" as CFString, kIOPMUserActiveLocal, &id)
         }
@@ -1300,22 +1322,91 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func checkUpdates() {
+    // MARK: - Updates: check, then "Update now" downloads, checks and installs the new version.
+    private static let updateConfig = SelfUpdate.Config(owner: "Solomon-69", repo: "Awayke", appName: "Awayke", zipName: "Awayke-mac.zip")
+    private var pendingOffer: SelfUpdate.Offer?
+    private let lastUpdateCheckKey = "lastUpdateCheck"
+
+    private func checkUpdates(silent: Bool = false) {
         let current = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
-        model.checkingUpdates = true
-        UpdateCheck.latest { [weak self] tag, why in
-            guard let self else { return }
-            self.model.checkingUpdates = false
-            if let tag {
-                let newer = isNewerVersion(tag, than: current)
-                self.model.updateAvailable = newer
-                let v = tag.trimmingCharacters(in: CharacterSet(charactersIn: "v"))
-                self.model.updateStatus = newer ? "Version \(v) is out. You have \(current)." : "You have the latest version (\(current))."
-            } else {
-                self.model.updateAvailable = false
-                self.model.updateStatus = "Could not check: \(why ?? "no answer")."
+        if model.updateBusy { return }
+        if !silent { model.checkingUpdates = true }
+        SelfUpdate.fetchLatest(Self.updateConfig) { [weak self] result in
+            do {
+                guard let self else { return }
+                self.model.checkingUpdates = false
+                UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: self.lastUpdateCheckKey)
+                switch result {
+                case .success(let offer):
+                    let newer = isNewerVersion(offer.tag, than: current)
+                    self.pendingOffer = newer ? offer : nil
+                    self.model.updateAvailable = newer
+                    self.model.updateFailed = false
+                    self.model.updateStatus = newer ? "Version \(offer.version) is out. You have \(current)."
+                                                    : "You have the latest version (\(current))."
+                case .failure(let f):
+                    if silent { return }   // a quiet daily check never shows an error
+                    self.model.updateAvailable = false
+                    self.model.updateStatus = "Could not check: \(f.message)"
+                }
             }
         }
+    }
+
+    /// Once a day, on launch, look quietly for a newer version so the Settings page already says so.
+    private func dailyUpdateCheck() {
+        let last = UserDefaults.standard.double(forKey: lastUpdateCheckKey)
+        if Date().timeIntervalSince1970 - last > 86_400 { checkUpdates(silent: true) }
+    }
+
+    private func installUpdate() {
+        guard let offer = pendingOffer, !model.updateBusy else { return }
+        model.updateBusy = true; model.updateProgress = 0; model.updateFailed = false
+        model.updateStatus = "Downloading Awayke \(offer.version)\u{2026}"
+        ActivityLog.write("Update: downloading \(offer.version).")
+        SelfUpdate.install(offer, Self.updateConfig, progress: { [weak self] f in
+            guard let self else { return }
+            self.model.updateProgress = f
+            self.model.updateStatus = f < 0.88 ? "Downloading Awayke \(offer.version)\u{2026} \(Int(f / 0.85 * 100))%" : "Checking the download\u{2026}"
+        }, done: { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success:
+                self.model.updateStatus = "Installing, Awayke will reopen in a moment\u{2026}"
+                ActivityLog.write("Update: \(offer.version) checked, restarting to install it.")
+                self.rememberKeepAwakeForUpdate()
+                self.quit()
+            case .failure(let f):
+                self.model.updateBusy = false; self.model.updateFailed = true
+                self.model.updateStatus = "Update did not install: \(f.message) Your current version is untouched."
+                ActivityLog.write("Update failed: \(f.message)")
+            }
+        })
+    }
+
+    /// If Awayke is keeping the Mac awake, remember it (and the timer) so the new version carries on.
+    private func rememberKeepAwakeForUpdate() {
+        guard isOn else { return }
+        UserDefaults.standard.set(["end": timerEndDate?.timeIntervalSince1970 ?? 0,
+                                   "start": timerStartDate?.timeIntervalSince1970 ?? 0,
+                                   "total": timerTotalSeconds, "at": Date().timeIntervalSince1970],
+                                  forKey: "resumeAfterUpdate")
+    }
+
+    private func resumeAfterUpdate() {
+        let d = UserDefaults.standard
+        guard let r = d.dictionary(forKey: "resumeAfterUpdate") else { return }
+        d.removeObject(forKey: "resumeAfterUpdate")
+        guard Date().timeIntervalSince1970 - ((r["at"] as? Double) ?? 0) < 180 else { return }
+        performToggle(wantOn: true)
+        if isOn, let end = r["end"] as? Double, end > Date().timeIntervalSince1970 {
+            timerStartDate = Date(timeIntervalSince1970: (r["start"] as? Double) ?? Date().timeIntervalSince1970)
+            timerTotalSeconds = (r["total"] as? Double) ?? 0
+            armKeepAwakeTimer(end: Date(timeIntervalSince1970: end))
+        }
+        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        ActivityLog.write("Updated to \(v); keep-awake carried on.")
+        notify("Awayke updated to \(v). Your Mac is still being kept awake.")
     }
 
     // MARK: - Readers (no root needed)
