@@ -1,0 +1,178 @@
+/* kit.css: the shared panel look for the Windows versions of Nox and Awayke (identical copy in both).
+   Cards, smooth switches, chips and the drum picker, matching the Mac Settings panels. */
+:root {
+  --font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --radius: 12px;
+  --spring: cubic-bezier(.3, 1.45, .5, 1);
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  color-scheme: light dark;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; background: transparent; }
+html { overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text) 28%, transparent) transparent; }   /* scrolls only if the screen is too short */
+body {
+  font: 13px/1.35 var(--font);
+  color: var(--text);
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
+button:focus, button:focus-visible, input:focus { outline: none; }
+#root { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+
+/* ---------- cards and rows ---------- */
+.card {
+  background: var(--card);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius);
+  padding: 4px 14px;
+  transition: background .35s var(--ease), border-color .35s var(--ease);
+}
+.row { display: flex; align-items: center; gap: 12px; min-height: 46px; padding: 8px 0; }
+.row + .row, .row + .sub, .sub + .row { border-top: 1px solid var(--stroke); }
+.row .grow { flex: 1; min-width: 0; }
+.title { font-size: 13px; font-weight: 500; }
+.detail { font-size: 11.5px; color: var(--dim); margin-top: 1px; transition: color .3s; }
+.detail.warn { color: var(--warn); }
+.icon {
+  width: 30px; height: 30px; border-radius: 8px; flex: none;
+  display: grid; place-items: center;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+}
+.icon svg { width: 16px; height: 16px; }
+.sub { padding: 10px 0 12px; }
+.hint { font-size: 11px; color: var(--dim); text-align: center; padding: 0 8px; }
+.value { color: var(--accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* ---------- smooth switch: flips on tap, one spring, never snaps back ---------- */
+.switch {
+  position: relative; flex: none; width: 40px; height: 22px; border-radius: 11px;
+  background: var(--track-off);
+  transition: background .22s var(--ease);
+}
+.switch::after {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.28);
+  transition: transform .28s var(--spring), width .18s var(--ease);
+}
+.switch[aria-checked="true"] { background: var(--accent); }
+.switch[aria-checked="true"]::after { transform: translateX(18px); }
+.switch:active::after { width: 19px; }
+.switch[aria-checked="true"]:active::after { transform: translateX(15px); }
+
+/* ---------- chips ---------- */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips.seg { flex-wrap: nowrap; background: var(--track-off); border-radius: 9px; padding: 3px; gap: 2px; }
+.chip {
+  height: 26px; padding: 0 11px; border-radius: 8px; font-size: 12px; font-weight: 500;
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+  font-variant-numeric: tabular-nums;
+  transition: background .2s var(--ease), color .2s var(--ease), transform .12s var(--ease);
+}
+.seg .chip { flex: 1; background: transparent; padding: 0 6px; }
+.chip:hover { background: color-mix(in srgb, var(--text) 12%, transparent); }
+.chip:active { transform: scale(.96); }
+.chip.on { background: var(--accent); color: #fff; }
+.chip .x { margin-left: 6px; opacity: .55; font-weight: 400; }
+
+/* ---------- buttons ---------- */
+.btn {
+  height: 28px; padding: 0 12px; border-radius: 8px; font-size: 12px; font-weight: 500; flex: none;
+  background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent);
+  transition: background .2s, transform .12s var(--ease);
+}
+.btn:hover { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+.btn:active { transform: scale(.97); }
+.btn.solid { background: var(--accent); color: #fff; }
+.btn.plain { background: transparent; color: var(--dim); }
+.btn.plain:hover { color: var(--text); background: color-mix(in srgb, var(--text) 8%, transparent); }
+
+/* ---------- drum picker ---------- */
+.picker { display: flex; align-items: center; gap: 14px; }
+.picker .left { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.picker .label { font-size: 12px; color: var(--dim); }
+.picker .chips { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.drum { position: relative; display: flex; align-items: center; gap: 2px; height: 130px; flex: none; perspective: 400px; }
+.drum::before {
+  content: ""; position: absolute; left: -4px; right: -4px; top: 52px; height: 26px; border-radius: 7px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent); pointer-events: none;
+}
+.drum .col {
+  position: relative; width: 44px; height: 130px; overflow-y: scroll; scroll-snap-type: y mandatory;
+  scrollbar-width: none; padding: 52px 0;
+  -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+          mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+}
+.drum .col::-webkit-scrollbar { display: none; }
+.drum .item {
+  height: 26px; line-height: 26px; text-align: center; scroll-snap-align: center;
+  font-size: 14px; font-variant-numeric: tabular-nums; cursor: pointer; transform-origin: center;
+}
+.drum .sep { font-weight: 600; color: var(--dim); }
+
+/* ---------- range ---------- */
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; background: transparent; margin: 0; }
+input[type=range]::-webkit-slider-runnable-track {
+  height: 8px; border-radius: 4px;
+  background: linear-gradient(90deg, var(--accent) 0 var(--fill, 0%), var(--track-off) var(--fill, 0%) 100%);
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 4px; height: 20px; margin-top: -6px; border-radius: 2px; background: #fff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.18), 0 1px 3px rgba(0,0,0,.3);
+}
+
+/* ---------- open, close and view changes ---------- */
+#root.in > * { animation: kit-in .42s var(--spring) both; animation-delay: calc(var(--i, 0) * 28ms); }
+@keyframes kit-in { from { opacity: 0; transform: translateY(8px) scale(.985); } }
+.view { display: flex; flex-direction: column; gap: 10px; }
+.view[hidden] { display: none; }
+.view.slide { animation: kit-slide .34s var(--spring) both; }
+@keyframes kit-slide { from { opacity: 0; transform: translateX(14px); } }
+.reveal { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .3s var(--ease), opacity .25s; opacity: 0; }
+.reveal.open { grid-template-rows: 1fr; opacity: 1; }
+.reveal > div { overflow: hidden; }
+.fade-swap { transition: opacity .25s var(--ease); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: 0s !important; }
+}
+
+/* ---------- first-run welcome (kit.intro) ---------- */
+#root.intro-on > :not(.intro) { display: none; }
+.intro { display: flex; flex-direction: column; gap: 14px; padding: 6px 2px 0; }
+.intro.leaving { animation: intro-leave .22s var(--ease) both; }
+.intro-stage { display: grid; overflow: hidden; min-height: 330px; align-items: start; }
+.intro-page { grid-area: 1 / 1; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.intro-page > * { animation: intro-rise .6s cubic-bezier(.22, 1.12, .36, 1) both; animation-delay: calc(60ms + var(--i, 0) * 65ms); }
+.intro-page.in-next { animation: intro-in-next .5s cubic-bezier(.22, 1.08, .36, 1) both; }
+.intro-page.in-prev { animation: intro-in-prev .5s cubic-bezier(.22, 1.08, .36, 1) both; }
+.intro-page.out-next { animation: intro-out-next .32s var(--ease) both; }
+.intro-page.out-prev { animation: intro-out-prev .32s var(--ease) both; }
+.intro-page.out-next > *, .intro-page.out-prev > * { animation: none; }
+.intro-art { width: 64px; height: 64px; border-radius: 18px; display: grid; place-items: center; margin-top: 6px;
+  background: linear-gradient(140deg, var(--accent), var(--accent-deep, var(--accent))); color: #fff;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 35%, transparent); }
+.intro-art svg { width: 32px; height: 32px; }
+.intro-art.app { width: 78px; height: 78px; border-radius: 20px; animation-name: intro-pop; }
+.intro-page h2 { margin: 4px 0 0; font-size: 19px; font-weight: 650; letter-spacing: -.01em; }
+.intro-text { margin: 0 6px; font-size: 12.5px; color: var(--dim); line-height: 1.45; }
+.intro-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; text-align: left; }
+.intro-foot { display: flex; align-items: center; gap: 10px; }
+.intro-dots { flex: 1; display: flex; justify-content: center; gap: 6px; }
+.intro-dots i { width: 6px; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--text) 18%, transparent);
+  transition: width .4s var(--spring), background .3s var(--ease); }
+.intro-dots i.on { width: 18px; background: var(--accent); }
+.intro-next { min-width: 96px; height: 32px; border-radius: 16px; font-weight: 600; }
+@keyframes intro-rise { from { opacity: 0; transform: translateY(14px); filter: blur(4px); } }
+@keyframes intro-pop { 0% { opacity: 0; transform: scale(.6); } 60% { opacity: 1; transform: scale(1.06); } 100% { transform: none; } }
+@keyframes intro-in-next { from { opacity: 0; transform: translateX(40px); } }
+@keyframes intro-in-prev { from { opacity: 0; transform: translateX(-40px); } }
+@keyframes intro-out-next { to { opacity: 0; transform: translateX(-40px); } }
+@keyframes intro-out-prev { to { opacity: 0; transform: translateX(40px); } }
+@keyframes intro-leave { to { opacity: 0; transform: translateY(-6px) scale(.98); } }
+@media (prefers-reduced-motion: reduce) {
+  .intro-page > *, .intro-page.in-next, .intro-page.in-prev, .intro-art.app { animation: intro-fade .2s ease both; animation-delay: 0s; }
+  .intro-dots i { transition: none; }
+}
+@keyframes intro-fade { from { opacity: 0; } }

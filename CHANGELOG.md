@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Awayke is a fork of [Sleepless](https://github.com/Aboudjem/Sleepless) by Adam Boudjemaa.
 Versions 1.0.0 to 1.2.7 below are the original Sleepless releases and are kept for history.
 
+## [1.7.1] - 2026-10-31
+
+### Changed
+- Closing the lid no longer forces the screen off or flips dark mode by default (both are now off for new installs), so the Mac is not locked by Awayke's own screen-off. Both are still switchable in Settings.
+
 ## [Unreleased]
 
 ## [1.7.0] - 2026-10-30

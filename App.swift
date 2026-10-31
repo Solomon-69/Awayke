@@ -255,10 +255,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         model.batteryCutoff = d.bool(forKey: Pref.batteryCutoff)            // off by default
         model.showTimeInMenuBar = d.bool(forKey: Pref.menuBarTime)
         model.warnBeforeEnd = d.object(forKey: Pref.warnBeforeEnd) as? Bool ?? true
-        model.lidScreenOff = d.object(forKey: Pref.lidScreenOff) as? Bool ?? true
+        model.lidScreenOff = d.object(forKey: Pref.lidScreenOff) as? Bool ?? false
         model.lidMute = d.object(forKey: Pref.lidMute) as? Bool ?? true
         model.lidKeyboardOff = d.object(forKey: Pref.lidKeyboardOff) as? Bool ?? true
-        model.lidDarkMode = d.object(forKey: Pref.lidDarkMode) as? Bool ?? true
+        model.lidDarkMode = d.object(forKey: Pref.lidDarkMode) as? Bool ?? false
         model.lidLowPower = d.object(forKey: Pref.lidLowPower) as? Bool ?? true
         model.lidDocker = d.bool(forKey: Pref.lidDocker)
         model.lowPowerBattery = d.object(forKey: Pref.lowPowerBattery) as? Bool ?? true

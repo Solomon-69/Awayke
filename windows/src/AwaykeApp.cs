@@ -10,7 +10,7 @@ namespace Awayke;
 /// </summary>
 internal sealed class AwaykeApp : ApplicationContext
 {
-    public const string Version = "1.7.0";
+    public const string Version = "1.7.1";
     public const int AddTimeMinutes = 30;
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(15) };
     private const int TickMs = 10_000;
