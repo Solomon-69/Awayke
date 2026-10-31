@@ -344,7 +344,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Screen-awake assertion ("Mac and screen")
     private func updateDisplayAssertion() {
-        let want = isOn && model.keepDisplayAwake && !lidClosed   // lid shut: let the screen go dark
+        let want = isOn && model.keepDisplayAwake   // also with the lid shut, so the Mac never counts the screen as asleep and locks
         if want, displayAssertion == 0 {
             var id: IOPMAssertionID = 0
             let r = IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleDisplaySleep as CFString,

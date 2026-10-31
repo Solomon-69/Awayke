@@ -12,6 +12,7 @@ Versions 1.0.0 to 1.2.7 below are the original Sleepless releases and are kept f
 
 ### Changed
 - Closing the lid no longer forces the screen off or flips dark mode by default (both are now off for new installs), so the Mac is not locked by Awayke's own screen-off. Both are still switchable in Settings.
+- The keep-screen-on hold now also stays on while the lid is shut (1.5.0 released it), as in 1.4.x.
 
 ## [Unreleased]
 
