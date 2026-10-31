@@ -172,7 +172,7 @@ struct SettingsView: View {
                 }
                 CardDivider()
                 SettingRow(title: "What stays awake", detail: model.keepDisplayAwake
-                           ? "The screen stays on too while Awayke is on."
+                           ? "The screen stays on too while Awayke is on, even with the lid closed, so your Mac does not lock. Low Power Mode and the keyboard light below do not change this."
                            : "Only the Mac stays awake. The screen can still turn off to save power.") {
                     Picker("", selection: setting(\.keepDisplayAwake)) {
                         Text("Mac only").tag(false)
@@ -242,7 +242,7 @@ struct SettingsView: View {
                 .font(.system(size: 12)).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             SettingsCard {
-                SettingRow(title: "Turn the screen off", detail: "The screen goes dark and wakes again when you open the lid.") {
+                SettingRow(title: "Turn the screen off", detail: "Off by default. Turning the screen off makes macOS lock your Mac, so you need your password when you open the lid.") {
                     SmoothSwitch(isOn: model.lidScreenOff, title: "Turn the screen off", tint: accent) { setting(\.lidScreenOff).wrappedValue = $0 }
                 }
                 CardDivider()
