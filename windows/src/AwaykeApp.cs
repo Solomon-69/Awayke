@@ -10,7 +10,7 @@ namespace Awayke;
 /// </summary>
 internal sealed class AwaykeApp : ApplicationContext
 {
-    public const string Version = "1.7.1";
+    public const string Version = "1.8.0";
     public const int AddTimeMinutes = 30;
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(15) };
     private const int TickMs = 10_000;
@@ -456,7 +456,7 @@ internal sealed class AwaykeApp : ApplicationContext
             minutesLeft = offAt is { } t ? (int)Math.Round((t - DateTime.Now).TotalMinutes) : (int?)null,
             trayText = TrayText(),
             version = Version,
-            newerCheck = IsNewer("v1.7.1", Version) && !IsNewer("v1.6.9", Version),
+            newerCheck = IsNewer("v1.8.0", Version) && !IsNewer("v1.6.9", Version),
         });
     }
 
