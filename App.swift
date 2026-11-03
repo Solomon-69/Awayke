@@ -156,6 +156,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                                             name: debugNotification, object: nil)
         popover.behavior = .applicationDefined   // app-managed dismissal (no transient close/reopen flicker)
         popover.animates = true
+        PopoverStyle.apply(popover)
         popover.contentViewController = makeContentController()
 
         refresh()   // reflect TRUE system state on launch (never a stale assumption)

@@ -10,6 +10,9 @@ Versions 1.0.0 to 1.2.7 below are the original Sleepless releases and are kept f
 
 ## [1.8.0] - 2026-11-03
 
+### Fixed
+- The little arrow on top of the menu bar popover is now one connected shape with the body (no visible seam, light and dark).
+
 ### Added
 - Settings can be driven from the keyboard (Mac and Windows). Up and Down move a soft highlight through every setting (wrapping top to bottom), Left and Right or Space and Return change the highlighted setting (switches flip, choices step to the next option, timer drums step by one), Esc goes back. Does nothing while you type in a text field.
 

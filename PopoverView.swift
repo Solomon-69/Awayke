@@ -177,6 +177,7 @@ struct PopoverView: View {
         }
         .padding(14)
         .frame(width: 320, alignment: .top)
+        .modifier(PopoverBackdrop())
         .environment(\.sleepAccent, accent)
         .focusEffectDisabled()   // no blue keyboard-focus rings on the controls
         .animation(spring, value: model.isOn)
