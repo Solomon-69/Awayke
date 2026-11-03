@@ -113,6 +113,7 @@
 
   <!-- settings -->
   <div class="view" id="settings" hidden>
+    <div id="navPill" aria-hidden="true"></div>
     <div class="back"><button id="backBtn">&lsaquo; Back</button><span style="margin-left:auto;margin-right:auto;transform:translateX(-24px)">Settings</span></div>
     <div class="section">General</div>
     <div class="card">
@@ -198,8 +199,66 @@
   $('quit').onclick = () => kit.post('quit');
   function show(name) {
     ['main', 'settings'].forEach(v => { const n = $(v); n.hidden = v !== name; n.classList.toggle('slide', v === name); });
+    nav.i = -1; $('navPill').classList.remove('show');
   }
   window.onPanelClosed = () => show('main');
+
+  // ---- Keyboard walk through Settings: Up/Down move a soft highlight (wrapping), Left/Right/Space/Enter change it, Esc goes back.
+  const nav = { i: -1 };
+  const navStops = () => [...document.querySelectorAll('#settings .card > .row, #settings .card > .sub')].filter(n => n.id !== 'about' && !n.querySelector('#about'));
+  const clickNth = (list, d) => {
+    if (!list.length) return;
+    const cur = list.findIndex(c => c.classList.contains('on'));
+    const next = list[(((cur < 0 ? 0 : cur) + (d === 0 ? 1 : d)) % list.length + list.length) % list.length];
+    next.click();
+  };
+  function navAdjust(stop, d) {
+    const drum = stop.querySelector('#newTimer');
+    if (drum) {
+      if (d === 0) { $('addTimer').click(); return; }
+      newTimerValue = Math.max(5, Math.min(S.maxMinutes || 43200, newTimerValue + d));
+      drum.firstChild.set(newTimerValue);
+      return;
+    }
+    const sw = stop.querySelector('.switch'); if (sw) { sw.click(); return; }
+    const chips = stop.querySelector('.chips'); if (chips && chips.id !== 'choiceList') { clickNth([...chips.querySelectorAll('.chip')], d); return; }
+    const sw2 = stop.querySelector('#swatches'); if (sw2) { clickNth([...sw2.querySelectorAll('.swatch')], d); return; }
+    const btn = stop.querySelector('#checkUpdates'); if (btn && d === 0) btn.click();
+  }
+  function navPlace() {
+    const pill = $('navPill'), stops = navStops(), stop = stops[nav.i];
+    if (!stop || $('settings').hidden) { pill.classList.remove('show'); return; }
+    const host = $('settings').getBoundingClientRect(), r = stop.getBoundingClientRect();
+    const card = stop.closest('.card').getBoundingClientRect();
+    pill.style.width = (card.width - 8) + 'px';
+    pill.style.height = Math.max(r.height - 4, 30) + 'px';
+    pill.style.transform = `translate(${card.left - host.left + 4}px, ${r.top - host.top + 2}px)`;
+    pill.classList.add('show');
+  }
+  function navMove(step) {
+    const n = navStops().length; if (!n) return;
+    nav.i = nav.i < 0 ? (step >= 0 ? 0 : n - 1) : (((nav.i + step) % n) + n) % n;
+    const stop = navStops()[nav.i];
+    stop.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    navPlace();
+  }
+  document.addEventListener('keydown', e => {
+    if ($('settings').hidden || e.altKey || e.ctrlKey || e.metaKey) return;
+    const t = e.target && e.target.tagName;
+    if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT' || (e.target && e.target.isContentEditable)) return;   // typing
+    let handled = true;
+    if (e.key === 'ArrowDown') navMove(1);
+    else if (e.key === 'ArrowUp') navMove(-1);
+    else if (e.key === 'Escape') { nav.i = -1; navPlace(); show('main'); }
+    else if (nav.i >= 0 && (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter')) {
+      const stop = navStops()[nav.i];
+      navAdjust(stop, e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0);
+      requestAnimationFrame(navPlace);
+    } else handled = false;
+    if (handled) e.preventDefault();
+  });
+  new ResizeObserver(() => navPlace()).observe($('settings'));
+  window.addEventListener('resize', navPlace);
 
   // Timer chips are rebuilt only when the list of choices changes (so a click animates normally).
   let chipKey = '', timerChips = null, defaultKey = '', defaultChips = null;

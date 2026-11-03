@@ -38,6 +38,20 @@ jobs:
         shell: pwsh
         run: ./windows/ci/test.ps1 -Exe out/Awayke/Awayke.exe -Shots shots
 
+      - name: Settings keyboard walk (headless Chrome on the real panel)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force shots | Out-Null
+          $chrome = "C:\Program Files\Google\Chrome\Application\chrome.exe"
+          $page = "file:///" + ((Resolve-Path windows/ci/nav-test.html).Path -replace '\\','/')
+          $common = '--headless=new','--disable-gpu','--allow-file-access-from-files','--user-data-dir=nav-profile','--virtual-time-budget=30000'
+          & $chrome @common --dump-dom $page | Out-File -Encoding utf8 shots/nav-dom.html
+          & $chrome @common --window-size=420,760 --screenshot="$PWD/shots/nav-light.png" "$page`?shot"
+          & $chrome @common --window-size=420,760 --screenshot="$PWD/shots/nav-dark.png" "$page`?shot&dark"
+          $dom = Get-Content shots/nav-dom.html -Raw
+          ($dom | Select-String -Pattern '(?s)<pre id="out"[^>]*>(.*?)</pre>').Matches.Groups[1].Value
+          if ($dom -notmatch 'ALL PASS') { Write-Error 'keyboard walk test failed'; exit 1 }
+
       - name: Keep the app logs
         if: always()
         shell: pwsh

@@ -36,6 +36,8 @@ struct SettingsView: View {
         _pane = State(initialValue: pane)
     }
     @State private var newTimer = 30
+    @StateObject private var nav = SettingsNav()
+    @FocusState private var navFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var accent: Color { model.accent }
@@ -44,6 +46,7 @@ struct SettingsView: View {
         HStack(spacing: 0) {
             sidebar
             Divider()
+            ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Text(pane.rawValue)
@@ -54,17 +57,49 @@ struct SettingsView: View {
                 .padding(.horizontal, 28)
                 .padding(.vertical, 22)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .coordinateSpace(name: "settingsContent")
+                .onPreferenceChange(NavItemsKey.self) { items in
+                    nav.items = items
+                    if let c = nav.current, items[c] == nil { nav.current = nil }
+                }
+                .overlay(alignment: .topLeading) { NavPill(nav: nav, accent: accent, reduceMotion: reduceMotion) }
                 .id(pane)
                 .transition(.opacity.combined(with: .offset(y: reduceMotion ? 0 : 6)))
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onChange(of: nav.current) { _, c in
+                guard let c else { return }
+                withAnimation(reduceMotion ? nil : .spring(duration: 0.35, bounce: 0.1)) { proxy.scrollTo(c, anchor: .center) }
+            }
+            }
         }
         .frame(width: 660, height: height)
         .environment(\.sleepAccent, accent)
         .focusEffectDisabled()   // no blue keyboard-focus rings on the controls
+        .focusable()
+        .focused($navFocused)
+        .onAppear { DispatchQueue.main.async { navFocused = true } }
+        .onChange(of: pane) { _, _ in nav.current = nil }
+        .onKeyPress(phases: [.down, .repeat]) { press in handleNavKey(press) }
         .tint(accent)
         .animation(reduceMotion ? nil : .spring(duration: 0.32, bounce: 0.12), value: pane)
         .animation(reduceMotion ? nil : .spring(duration: 0.35, bounce: 0.2), value: model.accentIndex)
+    }
+
+    // MARK: Keyboard walk (Up/Down move the highlight, Left/Right/Space/Return change it, Esc closes)
+    private func handleNavKey(_ press: KeyPress) -> KeyPress.Result {
+        if NSApp.keyWindow?.firstResponder is NSText { return .ignored }   // typing in a text field
+        if press.modifiers.contains(.command) || press.modifiers.contains(.control) || press.modifiers.contains(.option) { return .ignored }
+        switch press.key {
+        case .upArrow:    nav.move(-1)
+        case .downArrow:  nav.move(1)
+        case .leftArrow:  guard nav.current != nil else { return .ignored }; nav.adjust(-1)
+        case .rightArrow: guard nav.current != nil else { return .ignored }; nav.adjust(1)
+        case .space, .return: guard nav.current != nil else { return .ignored }; nav.adjust(0)
+        case .escape:     nav.current = nil; NSApp.keyWindow?.close()
+        default: return .ignored
+        }
+        return .handled
     }
 
     // MARK: Sidebar
@@ -114,10 +149,12 @@ struct SettingsView: View {
                 SettingRow(title: "Launch at login", detail: "Start Awayke when you log in. It always starts switched off.") {
                     SmoothSwitch(isOn: model.launchAtLogin, title: "Launch at login", tint: accent) { want in DispatchQueue.main.async { model.onLogin(want) } }
                 }
+                .navRow({ _ in DispatchQueue.main.async { model.onLogin(!model.launchAtLogin) } })
                 CardDivider()
                 SettingRow(title: "Show in Dock", detail: "Off: Awayke stays in the menu bar only.") {
                     SmoothSwitch(isOn: model.showInDock, title: "Show in Dock", tint: accent) { setting(\.showInDock).wrappedValue = $0 }
                 }
+                .navRow(flip(\.showInDock))
             }
             SettingsCard {
                 SettingRow(title: "Single click on the menu bar icon",
@@ -129,6 +166,7 @@ struct SettingsView: View {
                     }
                     .pickerStyle(.segmented).labelsHidden().fixedSize()
                 }
+                .navRow(step(\.clickOpensPanel, [false, true]))
                 CardDivider()
                 SettingRow(title: "Hold length", detail: "How long to hold the icon before the hold action happens. Right-click always opens the panel.") {
                     Picker("", selection: setting(\.longPressIndex)) {
@@ -138,6 +176,7 @@ struct SettingsView: View {
                     }
                     .pickerStyle(.segmented).labelsHidden().fixedSize()
                 }
+                .navRow(step(\.longPressIndex, Array(longPressChoices.indices)))
             }
             Text("Show in the panel").font(.system(size: 12, weight: .semibold)).foregroundStyle(.secondary)
             panelCard
@@ -150,14 +189,17 @@ struct SettingsView: View {
             SettingRow(title: "Auto-off timer", detail: nil) {
                 SmoothSwitch(isOn: model.showTimerRow, title: "Show auto-off timer", tint: accent) { setting(\.showTimerRow).wrappedValue = $0 }
             }
+            .navRow(flip(\.showTimerRow))
             CardDivider()
             SettingRow(title: "Battery cutoff", detail: nil) {
                 SmoothSwitch(isOn: model.showBatteryRow, title: "Show battery cutoff", tint: accent) { setting(\.showBatteryRow).wrappedValue = $0 }
             }
+            .navRow(flip(\.showBatteryRow))
             CardDivider()
             SettingRow(title: "Launch at login", detail: nil) {
                 SmoothSwitch(isOn: model.showLoginRow, title: "Show launch at login", tint: accent) { setting(\.showLoginRow).wrappedValue = $0 }
             }
+            .navRow(flip(\.showLoginRow))
         }
     }
 
@@ -170,6 +212,7 @@ struct SettingsView: View {
                         DispatchQueue.main.async { model.onToggle(want) }
                     }
                 }
+                .navRow({ _ in DispatchQueue.main.async { model.onToggle(!model.isOn) } })
                 CardDivider()
                 SettingRow(title: "What stays awake", detail: model.keepDisplayAwake
                            ? "The screen stays on too while Awayke is on, even with the lid closed, so your Mac does not lock. Low Power Mode and the keyboard light below do not change this."
@@ -180,6 +223,7 @@ struct SettingsView: View {
                     }
                     .pickerStyle(.segmented).labelsHidden().fixedSize()
                 }
+                .navRow(step(\.keepDisplayAwake, [false, true]))
             }
             SettingsCard {
                 VStack(alignment: .leading, spacing: 10) {
@@ -214,6 +258,7 @@ struct SettingsView: View {
                     }
                 }
                 .padding(14)
+                .navRow { d in newTimer = min(max(newTimer + (d == 0 ? 1 : d), 5), maxTimerMinutes) }
                 CardDivider()
                 SettingRow(title: "Default auto-off timer", detail: "Used each time Awayke starts. You can still change it in the panel.") {
                     Picker("", selection: setting(\.defaultTimer)) {
@@ -222,15 +267,18 @@ struct SettingsView: View {
                     }
                     .pickerStyle(.menu).labelsHidden().fixedSize()
                 }
+                .navRow(step(\.defaultTimer, [0] + model.timerChoices))
             }
             SettingsCard {
                 SettingRow(title: "Show time left in the menu bar", detail: "While a timer runs, the time left sits next to the candle.") {
                     SmoothSwitch(isOn: model.showTimeInMenuBar, title: "Show time left in the menu bar", tint: accent) { setting(\.showTimeInMenuBar).wrappedValue = $0 }
                 }
+                .navRow(flip(\.showTimeInMenuBar))
                 CardDivider()
                 SettingRow(title: "Warn 5 minutes before the timer ends", detail: "A notice gives you time to add more. The panel has an Add \(addTimeMinutes) min button while a timer runs.") {
                     SmoothSwitch(isOn: model.warnBeforeEnd, title: "Warn 5 minutes before the timer ends", tint: accent) { setting(\.warnBeforeEnd).wrappedValue = $0 }
                 }
+                .navRow(flip(\.warnBeforeEnd))
             }
         }
     }
@@ -245,32 +293,39 @@ struct SettingsView: View {
                 SettingRow(title: "Turn the screen off", detail: "Off by default. Turning the screen off makes macOS lock your Mac, so you need your password when you open the lid.") {
                     SmoothSwitch(isOn: model.lidScreenOff, title: "Turn the screen off", tint: accent) { setting(\.lidScreenOff).wrappedValue = $0 }
                 }
+                .navRow(flip(\.lidScreenOff))
                 CardDivider()
                 SettingRow(title: "Mute the sound", detail: "So nothing plays from a closed laptop. Unmuted when the lid opens.") {
                     SmoothSwitch(isOn: model.lidMute, title: "Mute the sound", tint: accent) { setting(\.lidMute).wrappedValue = $0 }
                 }
+                .navRow(flip(\.lidMute))
                 CardDivider()
                 SettingRow(title: "Turn the keyboard light off", detail: "Comes back at the same brightness when you open the lid.") {
                     SmoothSwitch(isOn: model.lidKeyboardOff, title: "Turn the keyboard light off", tint: accent) { setting(\.lidKeyboardOff).wrappedValue = $0 }
                 }
+                .navRow(flip(\.lidKeyboardOff))
                 CardDivider()
                 SettingRow(title: "Switch to dark mode", detail: "Goes back to light when you open the lid, if it was light before. macOS asks once to let Awayke change this.") {
                     SmoothSwitch(isOn: model.lidDarkMode, title: "Switch to dark mode", tint: accent) { setting(\.lidDarkMode).wrappedValue = $0 }
                 }
+                .navRow(flip(\.lidDarkMode))
                 CardDivider()
                 SettingRow(title: "Turn on Low Power Mode", detail: "Saves battery while the lid is closed. Off again when you open the lid, unless the battery or heat rules still need it.") {
                     SmoothSwitch(isOn: model.lidLowPower, title: "Turn on Low Power Mode", tint: accent) { setting(\.lidLowPower).wrappedValue = $0 }
                 }
+                .navRow(flip(\.lidLowPower))
                 CardDivider()
                 SettingRow(title: "Pause Docker when it's idle", detail: "Off by default. Pauses Docker Desktop only when no container is running.") {
                     SmoothSwitch(isOn: model.lidDocker, title: "Pause Docker when it's idle", tint: accent) { setting(\.lidDocker).wrappedValue = $0 }
                 }
+                .navRow(flip(\.lidDocker))
             }
             if !model.lowPowerAllowed { lowPowerPermission }
             SettingsCard {
                 SettingRow(title: "Pause chosen apps", detail: "These apps are paused to save battery and carry on when the lid opens.") {
                     SmoothSwitch(isOn: model.lidPauseChosen, title: "Pause chosen apps", tint: accent) { setting(\.lidPauseChosen).wrappedValue = $0 }
                 }
+                .navRow(flip(\.lidPauseChosen))
                 VStack(alignment: .leading, spacing: 8) {
                     FlowChips(items: model.pauseList.map { ($0, appName($0)) }) { id in
                         model.pauseList.removeAll { $0 == id }
@@ -295,11 +350,13 @@ struct SettingsView: View {
                 SettingRow(title: "Pause every other app", detail: "Off by default. Never pauses editors, terminals, browsers, AI apps, Apple apps, or meeting, recording and dictation apps.") {
                     SmoothSwitch(isOn: model.lidPauseOthers, title: "Pause every other app", tint: accent) { setting(\.lidPauseOthers).wrappedValue = $0 }
                 }
+                .navRow(flip(\.lidPauseOthers))
             }
             SettingsCard {
                 SettingRow(title: "Keep busy apps at full speed", detail: "While Awayke is on, terminals, editors and AI apps are kept out of App Nap (macOS slowing apps you are not looking at). Their own setting comes back after. Takes effect for apps opened after you switch on.") {
                     SmoothSwitch(isOn: model.appNapOff, title: "Keep busy apps at full speed", tint: accent) { setting(\.appNapOff).wrappedValue = $0 }
                 }
+                .navRow(flip(\.appNapOff))
                 CardDivider()
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Browsers").font(.system(size: 13, weight: .medium))
@@ -376,12 +433,17 @@ struct SettingsView: View {
                     }
                 }
                 .padding(14)
+                .navRow { d in
+                    if d == 0 || !model.batteryCutoff { let b = setting(\.batteryCutoff); b.wrappedValue = !b.wrappedValue }
+                    else { model.onFloor(min(max(model.floorPercent + 5 * d, floorRange.lowerBound), floorRange.upperBound)) }
+                }
                 .animation(reduceMotion ? nil : .spring(duration: 0.32, bounce: 0.12), value: model.batteryCutoff)
             }
             SettingsCard {
                 SettingRow(title: "Low Power Mode on low battery", detail: "On battery, below \(model.lowPowerFloor)%, Low Power Mode turns on. It goes off when you charge or switch Awayke off.") {
                     SmoothSwitch(isOn: model.lowPowerBattery, title: "Low Power Mode on low battery", tint: accent) { setting(\.lowPowerBattery).wrappedValue = $0 }
                 }
+                .navRow(flip(\.lowPowerBattery))
                 if model.lowPowerBattery {
                     HStack {
                         Text("Below").font(.system(size: 12.5))
@@ -392,11 +454,16 @@ struct SettingsView: View {
                         Spacer()
                     }
                     .padding(.horizontal, 14).padding(.bottom, 12)
+                    .navRow { d in
+                        let v = model.lowPowerFloor + 5 * (d == 0 ? 1 : d)
+                        setting(\.lowPowerFloor).wrappedValue = v > 90 ? 10 : (v < 10 ? 90 : v)
+                    }
                 }
                 CardDivider()
                 SettingRow(title: "Heat safety", detail: "If your Mac gets very hot, Low Power Mode turns on. If it gets dangerously hot, Awayke switches off so the Mac can sleep and cool down.") {
                     SmoothSwitch(isOn: model.heatRules, title: "Heat safety", tint: accent) { setting(\.heatRules).wrappedValue = $0 }
                 }
+                .navRow(flip(\.heatRules))
             }
             if !model.lowPowerAllowed { lowPowerPermission }
             Text("These rules only work while Awayke is running.")
@@ -427,6 +494,7 @@ struct SettingsView: View {
                 SettingRow(title: "Join my iPhone hotspot", detail: "If the Wi-Fi drops, Awayke joins your hotspot. Set iPhone hotspot joining to Automatic in System Settings > Wi-Fi. macOS asks once for Location access, only to read Wi-Fi names.") {
                     SmoothSwitch(isOn: model.hotspotOn, title: "Join my iPhone hotspot", tint: accent) { setting(\.hotspotOn).wrappedValue = $0 }
                 }
+                .navRow(flip(\.hotspotOn))
                 if model.hotspotOn {
                     VStack(alignment: .leading, spacing: 8) {
                         TextField("Hotspot name", text: Binding(get: { model.hotspotName }, set: { model.hotspotName = $0 }))
@@ -446,6 +514,7 @@ struct SettingsView: View {
                 SettingRow(title: "Nudge my coding agent", detail: "After the network is out for 90 seconds and comes back, Awayke types \"continue\" into the tmux panes listed below. A pane only counts if you marked it: tmux set-option -p -t <pane> @awayke-nudge on") {
                     SmoothSwitch(isOn: model.nudgeOn, title: "Nudge my coding agent", tint: accent) { setting(\.nudgeOn).wrappedValue = $0 }
                 }
+                .navRow(flip(\.nudgeOn))
                 if model.nudgeOn {
                     VStack(alignment: .leading, spacing: 8) {
                         TextField("Panes, like work:1.0, agent:0.1", text: setting(\.nudgeTargets))
@@ -455,6 +524,7 @@ struct SettingsView: View {
                             Spacer()
                             SmoothSwitch(isOn: model.nudgeEnter, title: "Press Enter", tint: accent) { setting(\.nudgeEnter).wrappedValue = $0 }
                         }
+                        .navRow(flip(\.nudgeEnter))
                     }
                     .padding(.horizontal, 14).padding(.bottom, 12)
                 }
@@ -480,6 +550,11 @@ struct SettingsView: View {
                         .font(.system(size: 11.5)).foregroundStyle(.secondary)
                 }
                 .padding(14)
+                .navRow { d in
+                    if let v = NavOrder.step(Array(accentChoices.indices), current: model.accentIndex, by: d) {
+                        model.accentIndex = v; model.onSettingsChanged()
+                    }
+                }
             }
             SettingsCard {
                 VStack(alignment: .leading, spacing: 12) {
@@ -490,6 +565,7 @@ struct SettingsView: View {
                         }
                         .pickerStyle(.segmented).labelsHidden().fixedSize()
                     }
+                    .navRow(step(\.monochromeIcon, [false, true]))
                     HStack(spacing: 14) {
                         IconPreview(awake: false, label: "Off", tint: nil)
                         IconPreview(awake: true, label: "Awake", tint: model.monochromeIcon ? nil : accent)
@@ -551,6 +627,15 @@ struct SettingsView: View {
     }
 
     // MARK: Bindings
+    /// Keyboard walk: a Bool setting that flips on any key.
+    private func flip(_ kp: ReferenceWritableKeyPath<PopoverModel, Bool>) -> (Int) -> Void {
+        { _ in let b = setting(kp); b.wrappedValue = !b.wrappedValue }
+    }
+    /// Keyboard walk: a setting that steps through a fixed list of choices, wrapping.
+    private func step<T: Equatable>(_ kp: ReferenceWritableKeyPath<PopoverModel, T>, _ options: [T]) -> (Int) -> Void {
+        { d in if let v = NavOrder.step(options, current: model[keyPath: kp], by: d) { setting(kp).wrappedValue = v } }
+    }
+
     private func setting<T>(_ kp: ReferenceWritableKeyPath<PopoverModel, T>) -> Binding<T> {
         Binding(get: { model[keyPath: kp] }, set: { v in
             model[keyPath: kp] = v

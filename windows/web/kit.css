@@ -176,3 +176,15 @@ input[type=range]::-webkit-slider-thumb {
   .intro-dots i { transition: none; }
 }
 @keyframes intro-fade { from { opacity: 0; } }
+
+/* ---------- keyboard walk through Settings (Up/Down, Left/Right, Space/Enter, Esc) ---------- */
+#settings { position: relative; }
+#navPill {
+  position: absolute; left: 0; top: 0; width: 0; height: 0; opacity: 0; pointer-events: none; z-index: 5;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, transparent);
+  transition: transform .34s var(--spring), width .34s var(--spring), height .34s var(--spring), opacity .15s ease;
+}
+#navPill.show { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { #navPill { transition: opacity .15s ease; } }

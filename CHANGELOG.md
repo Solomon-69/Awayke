@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Awayke is a fork of [Sleepless](https://github.com/Aboudjem/Sleepless) by Adam Boudjemaa.
 Versions 1.0.0 to 1.2.7 below are the original Sleepless releases and are kept for history.
 
+## [1.8.0] - 2026-11-03
+
+### Added
+- Settings can be driven from the keyboard (Mac and Windows). Up and Down move a soft highlight through every setting (wrapping top to bottom), Left and Right or Space and Return change the highlighted setting (switches flip, choices step to the next option, timer drums step by one), Esc goes back. Does nothing while you type in a text field.
+
 ## [1.7.2] - 2026-11-02
 
 ### Changed
