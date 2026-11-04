@@ -31,7 +31,7 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     // 2. reading progress
-    if (!reduce && document.documentElement.scrollHeight > innerHeight * 2.6) {
+    if (false) {
       var bar = document.createElement('div'); bar.className = 'mo-progress'; document.body.appendChild(bar);
       var tick = 0;
       var upd = function () { tick = 0; var h = root.scrollHeight - innerHeight; bar.style.transform = 'scaleX(' + (h > 0 ? Math.min(1, scrollY / h) : 0) + ')'; };
