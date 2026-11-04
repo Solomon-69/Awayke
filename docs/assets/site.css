@@ -5,7 +5,7 @@ html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-stopped { overflow: hidden; }
 
 /* reading progress line */
-.mo-progress { position: fixed; inset: 0 0 auto 0; height: 2px; z-index: 9999; transform-origin: 0 50%; transform: scaleX(0); background: var(--accent, #a85432); pointer-events: none; }
+.mo-progress { display: none !important; position: fixed; inset: 0 0 auto 0; height: 2px; z-index: 9999; transform-origin: 0 50%; transform: scaleX(0); background: var(--accent, #a85432); pointer-events: none; }
 
 /* cards: lift, soft shadow, a faint light that follows the pointer */
 .card, .game, .point { transition: transform .28s var(--mo-ease), box-shadow .28s var(--mo-ease); will-change: transform; }
