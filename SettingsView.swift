@@ -74,6 +74,7 @@ struct SettingsView: View {
             }
         }
         .frame(width: 660, height: height)
+        .background(Color(nsColor: .windowBackgroundColor))
         .environment(\.sleepAccent, accent)
         .focusEffectDisabled()   // no blue keyboard-focus rings on the controls
         .focusable()
@@ -127,7 +128,7 @@ struct SettingsView: View {
         .padding(.horizontal, 10)
         .frame(width: 190)
         .frame(maxHeight: .infinity)
-        .background(.regularMaterial)
+        .background(Color.primary.opacity(0.035))
     }
 
     @ViewBuilder private var content: some View {
@@ -596,22 +597,17 @@ struct SettingsView: View {
                     Text(info?["NSHumanReadableCopyright"] as? String ?? "")
                         .font(.system(size: 11)).foregroundStyle(.secondary)
                         .padding(.top, 4)
-                    HStack(spacing: 8) {
-                        Button(model.checkingUpdates ? "Checking\u{2026}" : "Check for updates") { model.onCheckUpdates() }
-                            .disabled(model.checkingUpdates || model.updateBusy)
-                        if model.updateAvailable {
-                            Button(model.updateBusy ? "Updating\u{2026}" : "Update now") { model.onInstallUpdate() }
-                                .buttonStyle(.borderedProminent).tint(accent)
-                                .disabled(model.updateBusy)
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 8) { updateButtons; logButton }.fixedSize()
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 8) { updateButtons }.fixedSize()
+                            logButton.fixedSize()
                         }
-                        if model.updateFailed {
-                            Button("Open download page") { NSWorkspace.shared.open(UpdateCheck.releasesPage) }
-                        }
-                        Button("Show activity log") { model.onShowLog() }
                     }
                     .padding(.top, 8)
                     if let status = model.updateStatus {
                         Text(status).font(.system(size: 11.5)).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                             .contentTransition(.opacity)
                     }
                     if model.updateBusy {
@@ -625,6 +621,20 @@ struct SettingsView: View {
             .padding(16)
         }
     }
+
+    @ViewBuilder private var updateButtons: some View {
+        Button(model.checkingUpdates ? "Checking\u{2026}" : "Check for updates") { model.onCheckUpdates() }
+            .disabled(model.checkingUpdates || model.updateBusy)
+        if model.updateAvailable {
+            Button(model.updateBusy ? "Updating\u{2026}" : "Update now") { model.onInstallUpdate() }
+                .buttonStyle(.borderedProminent).tint(accent)
+                .disabled(model.updateBusy)
+        }
+        if model.updateFailed {
+            Button("Open download page") { NSWorkspace.shared.open(UpdateCheck.releasesPage) }
+        }
+    }
+    private var logButton: some View { Button("Show activity log") { model.onShowLog() } }
 
     // MARK: Bindings
     /// Keyboard walk: a Bool setting that flips on any key.
