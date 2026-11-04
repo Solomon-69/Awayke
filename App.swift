@@ -369,6 +369,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             w.styleMask = [.titled, .closable, .miniaturizable, .fullSizeContentView]
             w.titlebarAppearsTransparent = true
             w.titleVisibility = .hidden
+            w.isOpaque = true
+            w.backgroundColor = .windowBackgroundColor
             w.isMovableByWindowBackground = true
             w.isReleasedWhenClosed = false
             w.setContentSize(NSSize(width: 660, height: 500))
