@@ -52,6 +52,10 @@ if [ "$REGEN_ICON" = "1" ]; then
   swiftc -O -framework AppKit "$REPO/make-icon.swift" -o "$TMP_ICON/mkicon"
   "$TMP_ICON/mkicon" "$TMP_ICON"
   iconutil -c icns "$TMP_ICON/$EXEC_NAME.iconset" -o "$REPO/assets/$EXEC_NAME.icns"
+  ICONPKG="$TMP_ICON/$EXEC_NAME.icon"; mkdir -p "$ICONPKG/Assets" "$TMP_ICON/car"
+  cp "$TMP_ICON/flame.png" "$ICONPKG/Assets/"; cp "$REPO/assets/icon.json" "$ICONPKG/icon.json"
+  xcrun actool "$ICONPKG" --compile "$TMP_ICON/car" --platform macosx --minimum-deployment-target 13.0 --app-icon "$EXEC_NAME" --output-partial-info-plist "$TMP_ICON/partial.plist" >/dev/null
+  cp "$TMP_ICON/car/Assets.car" "$REPO/assets/Assets.car"
   rm -rf "$TMP_ICON"
 fi
 [ -f "$ICNS" ] || { echo "error: missing $ICNS (run ./build.sh --regen-icon)" >&2; exit 1; }
@@ -69,6 +73,8 @@ mkdir -p "$CONTENTS/MacOS" "$CONTENTS/Resources"
 cp "$REPO/Info.plist" "$CONTENTS/Info.plist"
 cp "$BIN_TMP/$EXEC_NAME" "$CONTENTS/MacOS/$EXEC_NAME"
 cp "$ICNS" "$CONTENTS/Resources/$EXEC_NAME.icns"
+# macOS 26 layered icon: same orange in light, dark and tinted looks (assets/icon.json + flame layer, compiled with actool)
+[ -f "$REPO/assets/Assets.car" ] && cp "$REPO/assets/Assets.car" "$CONTENTS/Resources/Assets.car"
 chmod +x "$CONTENTS/MacOS/$EXEC_NAME"
 # Ship the grant + uninstall scripts inside the bundle so people who download only the
 # .app can run the one-time passwordless grant and a clean uninstall.

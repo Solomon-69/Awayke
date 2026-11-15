@@ -136,3 +136,22 @@ let specs: [(String, CGFloat)] = [
 for (name, px) in specs { write(renderIcon(px), "\(iconset)/\(name).png") }
 write(renderIcon(1024), "\(outDir)/Sleepless-1024.png")
 print("rendered iconset (\(specs.count) sizes) + Sleepless-1024.png")
+
+// macOS 26 layered icon: the white flame alone on a clear 1024 canvas. The orange plate comes from
+// assets/icon.json, which gives the dark and tinted looks the same orange, so the icon never turns black.
+func renderFlameLayer(_ S: CGFloat) -> NSBitmapImageRep {
+    let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(S), pixelsHigh: Int(S),
+        bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+        colorSpaceName: .calibratedRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+    let ctx = NSGraphicsContext(bitmapImageRep: rep)!
+    NSGraphicsContext.saveGraphicsState(); NSGraphicsContext.current = ctx
+    let markH = S * 0.52
+    let mark = NSRect(x: S / 2 - markH / 2, y: S / 2 - markH / 2, width: markH, height: markH)
+    ctx.cgContext.beginTransparencyLayer(auxiliaryInfo: nil)
+    drawCandle(in: mark, color: .white, lineWidth: markH * 0.06)
+    ctx.cgContext.endTransparencyLayer()
+    NSGraphicsContext.restoreGraphicsState()
+    return rep
+}
+write(renderFlameLayer(1024), "\(outDir)/flame.png")
+print("rendered flame.png (layer for the macOS 26 icon)")
