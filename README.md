@@ -308,3 +308,5 @@ timer lengths, accent colours and a few extra options.
 
 [MIT](LICENSE). Copyright (c) 2026 Adam Boudjemaa (original Sleepless) and Copyright (c) 2026
 Solomon (Awayke changes).
+
+More free apps by Solomon: [Mac-Apps](https://solomon-69.github.io/Mac-Apps/)
