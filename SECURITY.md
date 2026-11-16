@@ -131,8 +131,8 @@ If you grab a prebuilt release instead of building it, you can confirm it is gen
 project's build, with no Apple account and no shared secret:
 
 ```sh
-shasum -a 256 -c SHA256SUMS                                  # bytes match what was published
-gh attestation verify Awayke-<version>.zip -R Solomon-69/Awayke   # built by this repo's release workflow
+shasum -a 256 -c --ignore-missing SHA256SUMS                 # bytes match what was published
+gh attestation verify Awayke-mac.zip -R Solomon-69/Awayke   # built by this repo's release workflow
 ```
 
 The full walkthrough (what each check proves, how to reproduce the build, and a VirusTotal

@@ -153,6 +153,9 @@ enum SelfUpdate {
             if mv "$DEST" "$OLD"; then
               if /usr/bin/ditto "$NEW" "$DEST" && /usr/bin/xattr -dr com.apple.quarantine "$DEST" 2>/dev/null; then
                 rm -rf "$OLD"
+                # New dates + re-register, so macOS shows the new icon (the zip keeps the build's old dates).
+                /usr/bin/touch "$DEST"
+                /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$DEST" >/dev/null 2>&1
               else
                 rm -rf "$DEST"; mv "$OLD" "$DEST"
               fi
@@ -201,5 +204,32 @@ enum SelfUpdate {
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         p.waitUntilExit()
         return (p.terminationStatus, String(decoding: data, as: UTF8.self))
+    }
+}
+
+/// New icon after an update. macOS caches an app's icon by its path and date. An update unzips the new app with the
+/// zip's old dates, so Finder, the Dock and Launchpad can keep showing the old icon. Stamping the bundle with today's
+/// date and re-registering it with LaunchServices makes macOS read the new icon.
+enum IconRefresh {
+    static let lsregister = "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+
+    static func now(_ app: URL) {
+        let p = app.path
+        guard app.pathExtension == "app", !p.contains("/AppTranslocation/"), !p.hasPrefix("/Volumes/") else { return }
+        try? FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: p)
+        let r = Process(); r.executableURL = URL(fileURLWithPath: lsregister); r.arguments = ["-f", p]
+        r.standardOutput = FileHandle.nullDevice; r.standardError = FileHandle.nullDevice
+        if (try? r.run()) != nil { r.waitUntilExit() }
+        NSWorkspace.shared.noteFileSystemChanged(p)
+    }
+
+    /// Once per version, at launch: also fixes copies an older updater already swapped in.
+    static func onceForThisVersion() {
+        let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
+        let key = "iconRefreshedForVersion"
+        guard UserDefaults.standard.string(forKey: key) != v else { return }
+        UserDefaults.standard.set(v, forKey: key)
+        let app = Bundle.main.bundleURL
+        DispatchQueue.global(qos: .utility).async { now(app) }
     }
 }

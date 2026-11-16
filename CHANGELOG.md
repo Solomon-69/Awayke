@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Awayke is a fork of [Sleepless](https://github.com/Aboudjem/Sleepless) by Adam Boudjemaa.
 Versions 1.0.0 to 1.2.7 below are the original Sleepless releases and are kept for history.
 
+## [1.8.3] - 2026-11-16
+### Fixed
+- The app icon now updates after an in-app update. macOS kept showing the old black icon because the
+  new app kept the zip's old dates. The updater now stamps the new app and re-registers it, and the
+  app does the same once on its first launch after any update.
+- The download check in the release notes works when you only downloaded one file
+  (`shasum -a 256 -c --ignore-missing SHA256SUMS`).
+
 ## [1.8.2] - 2026-11-16
 
 ### Fixed

@@ -111,6 +111,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var watchdogPipe: Pipe?          // kept open for the app's lifetime; EOF = we died
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        IconRefresh.onceForThisVersion()   // new icon shows after an update
         // Renamed/moved app: point the login item at this copy.
         if SMAppService.mainApp.status == .enabled { try? SMAppService.mainApp.register() }
         batteryFloorPercent = min(max((UserDefaults.standard.object(forKey: floorKey) as? Int) ?? floorDefault, floorMin), floorMax)

@@ -170,7 +170,7 @@ jobs:
             echo "---"
             echo "### Verify this download"
             echo '```sh'
-            echo "shasum -a 256 -c SHA256SUMS"
+            echo "shasum -a 256 -c --ignore-missing SHA256SUMS"
             echo "gh attestation verify ${{ steps.zip.outputs.asset }} -R ${{ github.repository }}"
             echo '```'
             echo "See [docs/AUDIT.md](https://github.com/${{ github.repository }}/blob/main/docs/AUDIT.md) for what each check proves."

@@ -30,11 +30,11 @@ build-provenance attestation. Two checks, both offline-friendly:
 
 ```sh
 # 1. Integrity: the bytes match what the release published.
-shasum -a 256 -c SHA256SUMS
+shasum -a 256 -c --ignore-missing SHA256SUMS
 
 # 2. Provenance: this exact zip was built by Awayke's GitHub Actions release
 #    workflow, from this repo, at the released commit (SLSA Build L2, Sigstore-signed).
-gh attestation verify Awayke-<version>.zip -R Solomon-69/Awayke
+gh attestation verify Awayke-mac.zip -R Solomon-69/Awayke
 ```
 
 What each one proves:

@@ -7,14 +7,18 @@
 <p><b>Keep your MacBook awake with the lid closed. One click in the menu bar.</b></p>
 
 <p>
-  <a href="https://github.com/Solomon-69/Awayke/releases/latest"><img alt="Version 1.7.2" src="https://img.shields.io/badge/version-1.7.2-E07B00?style=flat-square"></a>
+  <a href="https://github.com/Solomon-69/Awayke/releases/latest"><img alt="Latest version" src="https://img.shields.io/github/v/release/Solomon-69/Awayke?label=version&color=E07B00&style=flat-square"></a>
   <img alt="macOS 26 or later, Apple silicon" src="https://img.shields.io/badge/macOS-26%2B-1f1d1a?style=flat-square&logo=apple&logoColor=white">
   <a href="LICENSE"><img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-5b8a5a?style=flat-square"></a>
   <img alt="No telemetry" src="https://img.shields.io/badge/telemetry-none-5b8a5a?style=flat-square">
 </p>
 
 <p>
-  <a href="https://github.com/Solomon-69/Awayke/releases/latest"><b>Download</b></a>
+  <a href="https://github.com/Solomon-69/Awayke/releases/latest/download/Awayke.dmg"><b>Download for Mac</b></a>
+  &nbsp;&middot;&nbsp;
+  <a href="https://github.com/Solomon-69/Awayke/releases/latest/download/Awayke-mac.zip">Mac zip</a>
+  &nbsp;&middot;&nbsp;
+  <a href="https://github.com/Solomon-69/Awayke/releases/latest/download/Awayke-windows.zip"><b>Download for Windows</b></a>
   &nbsp;&middot;&nbsp;
   <a href="#install">Install</a>
   &nbsp;&middot;&nbsp;
@@ -116,7 +120,7 @@ Awayke is tiny and native: no background helper, no kernel extension, no telemet
 
 ## Install
 
-1. Download **Awayke.dmg** from the [latest release](https://github.com/Solomon-69/Awayke/releases/latest). A zip of the same app is there too.
+1. Download **[Awayke.dmg](https://github.com/Solomon-69/Awayke/releases/latest/download/Awayke.dmg)** (always the newest). A [zip of the same app](https://github.com/Solomon-69/Awayke/releases/latest/download/Awayke-mac.zip) is there too.
 2. Open it and drag **Awayke** into **Applications**.
 3. Open Awayke from Applications. A small candle appears in your menu bar.
 4. Click the candle to switch it on. The first time, Awayke asks for permission once (see below). Then close the lid.
@@ -129,12 +133,12 @@ opening it the first time:
 
 You only need to do this once. Releases that are signed and notarised open straight away.
 
-### Install with Homebrew (coming soon)
+### Install with one line
 
-There is no Homebrew tap yet. When there is, installing will be one line:
+Open **Terminal**, paste this and press Return. It downloads Awayke, checks its SHA-256, installs it to the Applications folder in your home folder and opens it.
 
 ```sh
-brew install --cask awayke   # not available yet
+curl -fsSL https://solomon-69.github.io/Mac-Apps/download/install.sh | bash -s awayke
 ```
 
 ## The one-time permission
