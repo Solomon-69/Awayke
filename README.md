@@ -16,7 +16,7 @@
 <p>
   <a href="https://github.com/Solomon-69/Awayke/releases/latest/download/Awayke.dmg"><img alt="Download for Mac" height="40" src="https://img.shields.io/badge/Download_for_Mac-1f1d1a?style=for-the-badge&logo=apple&logoColor=white"></a>
   &nbsp;
-  <a href="https://github.com/Solomon-69/Awayke/releases/latest/download/Awayke-windows.zip"><img alt="Download for Windows" height="40" src="https://img.shields.io/badge/Download_for_Windows-0078D4?style=for-the-badge&logo=windows&logoColor=white"></a>
+  <a href="https://github.com/Solomon-69/Awayke/releases/latest/download/Awayke-windows.zip"><img alt="Download for Windows" height="40" src="https://img.shields.io/badge/Download_for_Windows-0078D4?style=for-the-badge&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0wIDMuNCA5LjggMnY5LjVIMHpNMTAuOSAxLjkgMjQgMHYxMS40SDEwLjl6TTAgMTIuNWg5LjhWMjJMMCAyMC42ek0xMC45IDEyLjZIMjRWMjRsLTEzLjEtMS45eiIvPjwvc3ZnPg%3D%3D"></a>
 </p>
 
 <br>
