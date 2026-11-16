@@ -22,18 +22,11 @@ private struct Rise: ViewModifier {
     }
 }
 
-/// Frosted-glass panel on a plain soft backdrop. Nothing from the screen shows through it.
+/// Was a frosted-glass card on the backdrop. Now draws nothing: one layer, the backdrop and the content.
 private struct Glass: ViewModifier {
-    @Environment(\.colorScheme) private var scheme
     func body(content: Content) -> some View {
-        let dark = scheme == .dark
+        // One layer only: the content sits straight on the window background (no card, border or shadow).
         content
-            .background(RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color(nsColor: .windowBackgroundColor).opacity(dark ? 0.50 : 0.60)))
-            .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(LinearGradient(colors: [Color.white.opacity(dark ? 0.20 : 0.85), Color.white.opacity(dark ? 0.04 : 0.15)],
-                                             startPoint: .top, endPoint: .bottom), lineWidth: 1))
-            .shadow(color: .black.opacity(dark ? 0.45 : 0.16), radius: 22, y: 12)
     }
 }
 
