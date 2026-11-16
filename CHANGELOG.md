@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Awayke is a fork of [Sleepless](https://github.com/Aboudjem/Sleepless) by Adam Boudjemaa.
 Versions 1.0.0 to 1.2.7 below are the original Sleepless releases and are kept for history.
 
+## [1.8.2] - 2026-11-16
+
+### Fixed
+- The Settings window no longer shows a blue outline when it sits in front of another window.
+- The menu bar icon is orange in dark and tinted looks.
+
+### Changed
+- Settings shows Launch at login once, on the General page. The second switch under "Show in the panel" is gone.
+
 ## [1.8.1] - 2026-11-04
 
 ### Fixed

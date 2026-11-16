@@ -76,9 +76,11 @@ struct SettingsView: View {
         .frame(width: 660, height: height)
         .background(Color(nsColor: .windowBackgroundColor))
         .environment(\.sleepAccent, accent)
-        .focusEffectDisabled()   // no blue keyboard-focus rings on the controls
         .focusable()
         .focused($navFocused)
+        // After .focusable(), so the page itself never draws a blue focus ring
+        // around the window edge (it did when the window sat over another one).
+        .focusEffectDisabled()   // no blue keyboard-focus rings on the controls
         .onAppear { DispatchQueue.main.async { navFocused = true } }
         .onChange(of: pane) { _, _ in nav.current = nil }
         .onKeyPress(phases: [.down, .repeat]) { press in handleNavKey(press) }
@@ -196,11 +198,6 @@ struct SettingsView: View {
                 SmoothSwitch(isOn: model.showBatteryRow, title: "Show battery cutoff", tint: accent) { setting(\.showBatteryRow).wrappedValue = $0 }
             }
             .navRow(flip(\.showBatteryRow))
-            CardDivider()
-            SettingRow(title: "Launch at login", detail: nil) {
-                SmoothSwitch(isOn: model.showLoginRow, title: "Show launch at login", tint: accent) { setting(\.showLoginRow).wrappedValue = $0 }
-            }
-            .navRow(flip(\.showLoginRow))
         }
     }
 
