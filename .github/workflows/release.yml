@@ -104,8 +104,13 @@ jobs:
           STAGE="$RUNNER_TEMP/dmg"
           rm -rf "$STAGE"; mkdir -p "$STAGE"
           ditto "dist/Awayke.app" "$STAGE/Awayke.app"
-          ln -s /Applications "$STAGE/Applications"
-          hdiutil create -volname "Awayke" -srcfolder "$STAGE" -fs HFS+ -format UDZO -ov Awayke.dmg
+          # The nice install window (background, arrow, opens in the middle of the screen), from Mac-Apps/tools/dmg.
+          T="$RUNNER_TEMP/dmgtool"; mkdir -p "$T"
+          for f in make_dmg.py mkalias.swift arrow.png applications-icon.png; do
+            curl -fsSL "https://raw.githubusercontent.com/Solomon-69/Mac-Apps/c0b4b8025ba7d623ffe1c9888bf84ce4b9083129/tools/dmg/$f" -o "$T/$f"
+          done
+          python3 -m venv "$T/venv"; "$T/venv/bin/pip" -q install dmgbuild pillow
+          "$T/venv/bin/python" "$T/make_dmg.py" --app "$STAGE/Awayke.app" --name Awayke --out Awayke.dmg
           if [ "$HAS_SIGNING" = "true" ]; then
             codesign --force --timestamp --sign "$SIGN_IDENTITY" Awayke.dmg
           fi
@@ -184,13 +189,15 @@ jobs:
           set -euo pipefail
           TAG="${{ steps.ver.outputs.tag }}"
           ASSET="${{ steps.zip.outputs.asset }}"
+          # Not signed with the Developer ID: publish as a pre-release, so "latest" (downloads, in-app updates) stays signed.
+          PRE=""; [ "$HAS_SIGNING" = "true" ] || PRE="--prerelease --latest=false"
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" Awayke.dmg "$ASSET" SHA256SUMS --clobber
             gh release edit "$TAG" --notes-file NOTES.md --title "Awayke ${{ steps.ver.outputs.version }}"
           else
             gh release create "$TAG" Awayke.dmg "$ASSET" SHA256SUMS \
               --title "Awayke ${{ steps.ver.outputs.version }}" \
-              --notes-file NOTES.md
+              --notes-file NOTES.md $PRE
           fi
 
   windows:
