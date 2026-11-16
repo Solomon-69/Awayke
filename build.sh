@@ -53,7 +53,7 @@ if [ "$REGEN_ICON" = "1" ]; then
   "$TMP_ICON/mkicon" "$TMP_ICON"
   iconutil -c icns "$TMP_ICON/$EXEC_NAME.iconset" -o "$REPO/assets/$EXEC_NAME.icns"
   ICONPKG="$TMP_ICON/$EXEC_NAME.icon"; mkdir -p "$ICONPKG/Assets" "$TMP_ICON/car"
-  cp "$TMP_ICON/flame.png" "$ICONPKG/Assets/"; cp "$REPO/assets/icon.json" "$ICONPKG/icon.json"
+  cp "$TMP_ICON/flame.png" "$REPO/assets/icon-bg.png" "$ICONPKG/Assets/"; mv "$ICONPKG/Assets/icon-bg.png" "$ICONPKG/Assets/bg.png"; cp "$REPO/assets/icon.json" "$ICONPKG/icon.json"
   xcrun actool "$ICONPKG" --compile "$TMP_ICON/car" --platform macosx --minimum-deployment-target 13.0 --app-icon "$EXEC_NAME" --output-partial-info-plist "$TMP_ICON/partial.plist" >/dev/null
   cp "$TMP_ICON/car/Assets.car" "$REPO/assets/Assets.car"
   rm -rf "$TMP_ICON"
@@ -73,7 +73,7 @@ mkdir -p "$CONTENTS/MacOS" "$CONTENTS/Resources"
 cp "$REPO/Info.plist" "$CONTENTS/Info.plist"
 cp "$BIN_TMP/$EXEC_NAME" "$CONTENTS/MacOS/$EXEC_NAME"
 cp "$ICNS" "$CONTENTS/Resources/$EXEC_NAME.icns"
-# macOS 26 layered icon: same orange in light, dark and tinted looks (assets/icon.json + flame layer, compiled with actool)
+# macOS 26 layered icon. The orange is an image layer (assets/icon-bg.png), not the fill: in the Dark icon style macOS swaps the fill for black, but keeps image layers, so the tile stays orange.
 [ -f "$REPO/assets/Assets.car" ] && cp "$REPO/assets/Assets.car" "$CONTENTS/Resources/Assets.car"
 chmod +x "$CONTENTS/MacOS/$EXEC_NAME"
 # Ship the grant + uninstall scripts inside the bundle so people who download only the
