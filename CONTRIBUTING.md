@@ -24,8 +24,8 @@ No Xcode project, just the Command Line Tools:
 ```sh
 git clone https://github.com/Solomon-69/Awayke.git
 cd Awayke
-./build.sh            # builds ./build/Awayke.app, ad-hoc signed
-open build/Awayke.app
+./build.sh            # builds ./build.noindex/Awayke.app, ad-hoc signed
+open build.noindex/Awayke.app
 ```
 
 `./install.sh` additionally installs the passwordless grant + login item (it prints exactly

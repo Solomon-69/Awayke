@@ -38,12 +38,27 @@ enum SelfUpdate {
         }
         var req = URLRequest(url: url, timeoutInterval: 20)
         req.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        // Backup route when GitHub's API refuses (rate limit, outage): the public releases page redirects to the newest tag.
+        func fromPage(_ why: String) {
+            guard c.apiBase == "https://api.github.com",
+                  let page = URL(string: "https://github.com/\(c.owner)/\(c.repo)/releases/latest") else { return main(.failure(Failure(message: why))) }
+            var head = URLRequest(url: page, timeoutInterval: 20); head.httpMethod = "HEAD"
+            URLSession.shared.dataTask(with: head) { _, r, _ in
+                guard let final = (r as? HTTPURLResponse)?.url, final.pathComponents.contains("tag"),
+                      case let tag = final.lastPathComponent, !tag.isEmpty, tag != "latest",
+                      let zip = URL(string: "https://github.com/\(c.owner)/\(c.repo)/releases/download/\(tag)/\(c.zipName)") else {
+                    return main(.failure(Failure(message: why)))
+                }
+                let sums = URL(string: "https://github.com/\(c.owner)/\(c.repo)/releases/download/\(tag)/SHA256SUMS")
+                main(.success(Offer(tag: tag, version: tag.trimmingCharacters(in: CharacterSet(charactersIn: "vV")), zip: zip, sums: sums)))
+            }.resume()
+        }
         URLSession.shared.dataTask(with: req) { data, resp, err in
-            if let err { return main(.failure(Failure(message: err.localizedDescription))) }
+            if let err { return fromPage(err.localizedDescription) }
             guard (resp as? HTTPURLResponse)?.statusCode == 200, let data,
                   let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let tag = obj["tag_name"] as? String else {
-                return main(.failure(Failure(message: "GitHub did not answer.")))
+                return fromPage("GitHub did not answer. Try again in a minute.")
             }
             let assets = (obj["assets"] as? [[String: Any]]) ?? []
             func link(_ name: String) -> URL? {

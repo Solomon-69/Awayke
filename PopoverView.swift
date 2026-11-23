@@ -131,6 +131,7 @@ final class PopoverModel {
     var updateStatus: String? = nil
     var updateAvailable = false
     var checkingUpdates = false
+    var upToDate = false
     var updateBusy = false
     var updateFailed = false
     var updateProgress = 0.0

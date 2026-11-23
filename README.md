@@ -247,8 +247,8 @@ You only need Apple's Command Line Tools (`xcode-select --install`). There is no
 ```sh
 git clone https://github.com/Solomon-69/Awayke.git
 cd Awayke
-./build.sh                 # builds ./build/Awayke.app (ad-hoc signed)
-open build/Awayke.app
+./build.sh                 # builds ./build.noindex/Awayke.app (ad-hoc signed)
+open build.noindex/Awayke.app
 ```
 
 Or install it in one go:

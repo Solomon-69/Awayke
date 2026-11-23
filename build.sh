@@ -5,7 +5,7 @@
 # ad-hoc signed. Works from any clone (no hardcoded paths or usernames).
 #
 # Usage:
-#   ./build.sh                      # build into ./build/Awayke.app
+#   ./build.sh                      # build into ./build.noindex/Awayke.app (.noindex: app search never lists the build copy)
 #   ./build.sh /Applications        # build straight into /Applications
 #   DEST=/Applications ./build.sh   # same, via env
 #   ./build.sh --regen-icon         # re-render the .icns from make-icon.swift first
@@ -23,7 +23,7 @@ EXEC_NAME="Sleepless"
 # Override with TARGET=... (e.g. CI on a runner whose SDK predates macOS 26).
 TARGET="${TARGET:-arm64-apple-macos26.0}"
 
-# Destination: first non-flag arg, else $DEST, else ./build
+# Destination: first non-flag arg, else $DEST, else ./build.noindex
 DEST="${DEST:-}"
 REGEN_ICON=0
 for arg in "$@"; do
@@ -32,7 +32,7 @@ for arg in "$@"; do
     *) DEST="$arg" ;;
   esac
 done
-DEST="${DEST:-$REPO/build}"
+DEST="${DEST:-$REPO/build.noindex}"
 
 APP="$DEST/$APP_NAME.app"
 CONTENTS="$APP/Contents"

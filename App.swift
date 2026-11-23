@@ -58,6 +58,11 @@ private let debugNotification = Notification.Name("com.aboudjem.Sleepless.debug"
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// Opening the app only adds the menu bar icon. macOS can send a "reopen" right as the app starts
+    /// (login, relaunch after an update, a second launch while it starts), so reopens in the first
+    /// seconds are ignored: Settings and the panel only open when the person asks for them.
+    private let launchedAt = Date()
+    private var justLaunched: Bool { Date().timeIntervalSince(launchedAt) < 5 }
     private var statusItem: NSStatusItem!
     private var timer: Timer?
     private let blankGlyph: NSImage = {   // same size as the candle, nothing drawn
@@ -282,6 +287,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Clicking the Dock icon (when shown) or opening Awayke again from Finder opens Settings.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if justLaunched { return false }
         if !flag { openSettings(activate: true) }
         return false
     }
@@ -450,6 +456,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         switch note.object as? String {
         case "popover": if !popover.isShown { openPopover(activate: false) }
         case "settings": openSettings(activate: false)
+        case "settings:about": openSettings(activate: false, pane: .about)
+        case "checkupdates": checkUpdates()
         case "lid:closed": simulatedLid = true; quietSimulation = false; checkLid()
         case "lid:closed-quiet": simulatedLid = true; quietSimulation = true; checkLid()
         case "lid:open": simulatedLid = false; checkLid(); simulatedLid = nil; quietSimulation = false
@@ -1334,9 +1342,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func checkUpdates(silent: Bool = false) {
         let current = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
         if model.updateBusy { return }
-        if !silent { model.checkingUpdates = true }
+        if !silent { model.checkingUpdates = true; model.upToDate = false }
+        let started = Date()
         SelfUpdate.fetchLatest(Self.updateConfig) { [weak self] result in
-            do {
+            // Keep "Checking…" up for a moment so a fast answer still reads as a real check.
+            let wait = max(0, 0.6 - Date().timeIntervalSince(started))
+            DispatchQueue.main.asyncAfter(deadline: .now() + (silent ? 0 : wait)) {
                 guard let self else { return }
                 self.model.checkingUpdates = false
                 UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: self.lastUpdateCheckKey)
@@ -1346,11 +1357,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     self.pendingOffer = newer ? offer : nil
                     self.model.updateAvailable = newer
                     self.model.updateFailed = false
+                    if !silent { self.model.upToDate = !newer }
                     self.model.updateStatus = newer ? "Version \(offer.version) is out. You have \(current)."
-                                                    : "You have the latest version (\(current))."
+                                                    : "Checked just now. You have the newest version (\(current))."
                 case .failure(let f):
                     if silent { return }   // a quiet daily check never shows an error
                     self.model.updateAvailable = false
+                    self.model.updateFailed = true
                     self.model.updateStatus = "Could not check: \(f.message)"
                 }
             }

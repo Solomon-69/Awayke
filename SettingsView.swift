@@ -620,8 +620,16 @@ struct SettingsView: View {
     }
 
     @ViewBuilder private var updateButtons: some View {
-        Button(model.checkingUpdates ? "Checking\u{2026}" : "Check for updates") { model.onCheckUpdates() }
-            .disabled(model.checkingUpdates || model.updateBusy)
+        Group {
+            if model.upToDate && !model.checkingUpdates {
+                AwaykeUpToDateBadge { model.onCheckUpdates() }
+                    .transition(.scale(scale: 0.6).combined(with: .opacity))
+            } else {
+                Button(model.checkingUpdates ? "Checking\u{2026}" : "Check for updates") { model.onCheckUpdates() }
+                    .disabled(model.checkingUpdates || model.updateBusy)
+            }
+        }
+        .animation(.spring(response: 0.35, dampingFraction: 0.7), value: model.upToDate)
         if model.updateAvailable {
             Button(model.updateBusy ? "Updating\u{2026}" : "Update now") { model.onInstallUpdate() }
                 .buttonStyle(.borderedProminent).tint(accent)
@@ -802,5 +810,27 @@ private struct IconPreview: View {
             .frame(width: 64, height: 40)
             Text(label).font(.system(size: 11)).foregroundStyle(.secondary)
         }
+    }
+}
+
+/// Green tick shown after a check finds nothing newer. Click it to check again.
+struct AwaykeUpToDateBadge: View {
+    var recheck: () -> Void
+    @State private var pop = false
+    var body: some View {
+        Button(action: recheck) {
+            HStack(spacing: 5) {
+                Image(systemName: "checkmark").font(.system(size: 11, weight: .heavy))
+                    .scaleEffect(pop ? 1 : 0.3).rotationEffect(.degrees(pop ? 0 : -25))
+                Text("Up to date").font(.system(size: 12, weight: .semibold)).lineLimit(1).fixedSize()
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 11).frame(height: 24)
+            .background(Capsule(style: .continuous).fill(Color(red: 0.20, green: 0.78, blue: 0.42)))
+        }
+        .buttonStyle(.plain)
+        .help("Checked just now. Click to check again.")
+        .accessibilityLabel("Up to date. Click to check again.")
+        .onAppear { withAnimation(.spring(response: 0.4, dampingFraction: 0.55).delay(0.05)) { pop = true } }
     }
 }

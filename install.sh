@@ -31,6 +31,7 @@ case "$reply" in [yY]*) ;; *) echo "Aborted."; exit 1 ;; esac
 
 # 1. Build into /Applications.
 echo "==> Building into /Applications"
+rm -rf "$HOME/Applications/$APP_NAME.app"   # one copy only, in /Applications
 DEST=/Applications "$REPO/build.sh" /Applications
 
 # 2. Passwordless grant (delegated to grant.sh, the single source of truth).
