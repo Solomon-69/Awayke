@@ -84,6 +84,11 @@ rm -rf "$BIN_TMP"
 
 # 4. Ad-hoc sign (no Apple Developer ID needed; trust comes from building it yourself).
 # SIGN_ID="Apple Development: ..." signs with a real identity; default is ad-hoc (-).
+# 25 Nov 2026: a stable identity keeps the same code signature across rebuilds, so macOS
+# never re-asks for the saved hotspot password. Uses the Developer ID when this Mac has one.
+if [ -z "${SIGN_ID:-}" ]; then
+  SIGN_ID=$(security find-identity -v -p codesigning 2>/dev/null | sed -n 's/.*"\(Developer ID Application:[^"]*\)".*/\1/p' | head -1)
+fi
 SIGN_ID="${SIGN_ID:--}"
 xattr -cr "$APP"   # Finder/provenance metadata breaks identity signing
 echo "==> Signing ($SIGN_ID)"

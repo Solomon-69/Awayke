@@ -287,16 +287,44 @@ enum Hotspot {
         return SecItemAdd(add as CFDictionary, nil) == errSecSuccess
     }
 
+    /// Reads the saved password without ever showing a macOS keychain prompt (25 Nov 2026: the
+    /// "Awayke wants to use your confidential information" dialog kept popping up after rebuilds).
+    /// If macOS will not hand it over silently, this returns nil and the log asks for it to be saved again.
     static func password(for ssid: String) -> String? {
         let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
                                 kSecAttrAccount as String: ssid, kSecReturnData as String: true,
-                                kSecMatchLimit as String: kSecMatchLimitOne]
+                                kSecMatchLimit as String: kSecMatchLimitOne,
+                                kSecUseAuthenticationUI as String: kSecUseAuthenticationUIFail]
         var out: CFTypeRef?
-        guard SecItemCopyMatching(q as CFDictionary, &out) == errSecSuccess, let d = out as? Data else { return nil }
+        let status = withoutKeychainPrompts { SecItemCopyMatching(q as CFDictionary, &out) }
+        guard status == errSecSuccess, let d = out as? Data else {
+            if status == errSecInteractionNotAllowed || status == errSecAuthFailed {
+                ActivityLog.write("Saved hotspot password needs saving again in Settings (macOS would have asked).")
+            }
+            return nil
+        }
         return String(data: d, encoding: .utf8)
     }
 
-    static func hasPassword(for ssid: String) -> Bool { !ssid.isEmpty && password(for: ssid) != nil }
+    /// Only checks that a password is saved. Reads the item's label, never the secret, so it never prompts.
+    static func hasPassword(for ssid: String) -> Bool {
+        guard !ssid.isEmpty else { return false }
+        let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
+                                kSecAttrAccount as String: ssid, kSecReturnAttributes as String: true,
+                                kSecMatchLimit as String: kSecMatchLimitOne,
+                                kSecUseAuthenticationUI as String: kSecUseAuthenticationUIFail]
+        var out: CFTypeRef?
+        return withoutKeychainPrompts { SecItemCopyMatching(q as CFDictionary, &out) } == errSecSuccess
+    }
+
+    /// Turns off keychain dialogs for one call, so background checks fail quietly instead of asking.
+    private static func withoutKeychainPrompts(_ body: () -> OSStatus) -> OSStatus {
+        var was: DarwinBoolean = true
+        SecKeychainGetUserInteractionAllowed(&was)
+        SecKeychainSetUserInteractionAllowed(false)
+        defer { SecKeychainSetUserInteractionAllowed(was.boolValue) }
+        return body()
+    }
 
     /// Finds the hotspot and joins it. The password never appears in a process argument.
     static func join(_ ssid: String) -> Bool {
