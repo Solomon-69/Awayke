@@ -288,6 +288,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Clicking the Dock icon (when shown) or opening Awayke again from Finder opens Settings.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         if justLaunched { return false }
+        // 25 Nov 2026: scripts and helpers run `open -g -a Awayke` to make sure it is running. That sends a
+        // reopen too, but leaves Awayke in the background. Only a real Dock or Finder open (which brings
+        // Awayke to the front) shows Settings, so background checks never pop the window up.
+        guard NSApp.isActive else { return false }
         if !flag { openSettings(activate: true) }
         return false
     }
